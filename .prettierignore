@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.next/
+*.tsbuildinfo
+
+# The Claude Design handoff bundle is a received artifact, not our source.
+# Reformatting it would destroy its fidelity as a reference.
+extras/claude-design-handoff/
+
+# Run evidence is written by the system, not by hand.
+evidence/
+apps/client/next-env.d.ts

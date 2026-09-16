@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "compilerOptions": {
+    "target": "ES2023",
+    "lib": ["ES2023"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+
+    // Strictness. `noUncheckedIndexedAccess` is deliberate: this system indexes
+    // into step and locator-rung arrays constantly, and an out-of-range read
+    // there surfaces as a mysterious replay failure rather than a crash.
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+
+    // tsup owns emit for the shared packages; tsc is used only for typechecking.
+    "noEmit": true,
+    "declaration": true,
+    "isolatedModules": true,
+
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true
+  }
+}

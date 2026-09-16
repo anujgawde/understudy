@@ -1,0 +1,25 @@
+extras
+
+node_modules/
+dist/
+.next/
+*.tsbuildinfo
+
+# Secrets. Credentials for the target app live here and must never be committed.
+.env
+.env.*
+!.env.example
+
+# Playwright
+test-results/
+playwright-report/
+.playwright/
+
+# Scratch run output. Curated evidence under /evidence/ is committed deliberately.
+/runs/
+/.artifacts/
+
+.DS_Store
+*.log
+.idea/
+.vscode/
