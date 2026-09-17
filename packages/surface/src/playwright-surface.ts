@@ -9,7 +9,7 @@ import type {
   ObservedElement,
   WaitCondition,
 } from '@understudy/schemas';
-import type { Surface } from './surface.js';
+import type { ResolveResult, Surface } from './surface.js';
 import { collectPageElements } from './enrichment.js';
 
 export interface PlaywrightSurfaceOptions {
@@ -59,7 +59,7 @@ export class PlaywrightSurface implements Surface {
         break;
       }
       case 'click': {
-        const target = await this.findElement(action.target);
+        const { locator: target } = await this.resolveElement(action.target);
         if (waitCondition) {
           await Promise.all([
             this.applyWaitCondition(waitCondition),
@@ -71,7 +71,7 @@ export class PlaywrightSurface implements Surface {
         break;
       }
       case 'fill': {
-        const target = await this.findElement(action.target);
+        const { locator: target } = await this.resolveElement(action.target);
         await target.fill(action.value);
         if (waitCondition) {
           await this.applyWaitCondition(waitCondition);
@@ -81,18 +81,26 @@ export class PlaywrightSurface implements Surface {
     }
   }
 
-  private async findElement(ladder: LocatorLadder): Promise<PlaywrightLocator> {
+  async resolve(ladder: LocatorLadder): Promise<ResolveResult> {
+    const { rungIndex, rung, matchCount } = await this.resolveElement(ladder);
+    return { rungIndex, rung, matchCount };
+  }
+
+  private async resolveElement(
+    ladder: LocatorLadder,
+  ): Promise<ResolveResult & { locator: PlaywrightLocator }> {
     await this.page.evaluate(() => {
       document.querySelectorAll('[data-understudy-act-target]').forEach((el) => {
         el.removeAttribute('data-understudy-act-target');
       });
     });
 
-    for (const rung of ladder) {
+    for (let rungIndex = 0; rungIndex < ladder.length; rungIndex++) {
+      const rung = ladder[rungIndex]!;
       const locator = await this.buildLocator(rung);
       if (!locator) continue;
-      const count = await locator.count();
-      if (count > 0) return locator.first();
+      const matchCount = await locator.count();
+      if (matchCount > 0) return { rungIndex, rung, matchCount, locator: locator.first() };
     }
 
     const strategies = ladder.map((r) => r.strategy).join(', ');
