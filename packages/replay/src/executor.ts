@@ -1,6 +1,8 @@
 import type {
   Action,
+  Assertion,
   Capability,
+  Checkpoint,
   FailureCode,
   Outcome,
   RunLog,
@@ -38,6 +40,49 @@ function resolveActionInputs(action: Action, inputs: Record<string, string>): Ac
     case 'click':
       return action;
   }
+}
+
+function describeAssertion(assertion: Assertion): string {
+  switch (assertion.assert) {
+    case 'text_present':
+      return `expected text "${assertion.text}" to be present`;
+    case 'text_absent':
+      return `expected text "${assertion.text}" to be absent`;
+    case 'element_present':
+      return `expected element to be present (${assertion.target[0]!.strategy} locator)`;
+    case 'url_matches':
+      return `expected URL to match /${assertion.pattern}/`;
+  }
+}
+
+async function evaluateAssertion(assertion: Assertion, surface: Surface): Promise<boolean> {
+  switch (assertion.assert) {
+    case 'text_present':
+      return surface.hasText(assertion.text);
+    case 'text_absent':
+      return !(await surface.hasText(assertion.text));
+    case 'element_present':
+      try {
+        await surface.resolve(assertion.target);
+        return true;
+      } catch {
+        return false;
+      }
+    case 'url_matches':
+      return new RegExp(assertion.pattern).test(await surface.pageUrl());
+  }
+}
+
+async function evaluateCheckpoint(
+  checkpoint: Checkpoint,
+  surface: Surface,
+): Promise<{ passed: boolean; failedAssertion?: Assertion }> {
+  for (const assertion of checkpoint.allOf) {
+    if (!(await evaluateAssertion(assertion, surface))) {
+      return { passed: false, failedAssertion: assertion };
+    }
+  }
+  return { passed: true };
 }
 
 export async function execute(options: ExecutorOptions): Promise<ExecutorResult> {
@@ -116,6 +161,37 @@ export async function execute(options: ExecutorOptions): Promise<ExecutorResult>
       resolvedByIndex,
       succeeded: true,
     });
+
+    const stepCheckpoints = capability.checkpoints.filter(
+      (checkpoint) => checkpoint.afterStepId === step.stepId,
+    );
+
+    for (const checkpoint of stepCheckpoints) {
+      const result = await evaluateCheckpoint(checkpoint, surface);
+
+      entries.push({
+        entryType: 'assertion',
+        sequence: sequence++,
+        occurredAt: new Date().toISOString(),
+        actor: 'system',
+        checkpointId: checkpoint.checkpointId,
+        passed: result.passed,
+      });
+
+      if (!result.passed) {
+        const failedDescription = describeAssertion(result.failedAssertion!);
+        outcome = {
+          classification: 'failed',
+          failureCode: 'assertion_failed',
+          message: `Checkpoint "${checkpoint.checkpointId}" failed: ${failedDescription}`,
+          failedAtStepId: step.stepId,
+          interventionRaised: false,
+        };
+        break;
+      }
+    }
+
+    if (outcome) break;
   }
 
   const runLog: RunLog = {

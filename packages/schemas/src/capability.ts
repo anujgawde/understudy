@@ -32,6 +32,7 @@ export const Checkpoint = z.object({
   afterStepId: z.string().min(1),
   allOf: z.array(Assertion).min(1),
 });
+export type Checkpoint = z.infer<typeof Checkpoint>;
 
 export const ExtractionRule = z.object({
   outputName: z.string().min(1),

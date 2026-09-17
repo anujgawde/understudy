@@ -313,6 +313,271 @@ describe('Executor', () => {
     expect(runLog.runId).toBe('my-custom-run-id');
   });
 
+  test('passing checkpoint records an assertion entry and succeeds', { timeout: 30_000 }, async () => {
+    await page.goto(`${BASE_URL}/logout`);
+
+    const capability: Capability = {
+      ...makeLookupCapability(BASE_URL),
+      capabilityId: 'test-checkpoint-pass',
+      checkpoints: [
+        {
+          checkpointId: 'on-detail-page',
+          afterStepId: 'click-member-row',
+          allOf: [
+            { assert: 'text_present', text: 'SHARE SUMMARY' },
+            { assert: 'url_matches', pattern: '/members/detail' },
+          ],
+        },
+      ],
+    };
+
+    const { runLog } = await execute({
+      capability,
+      surface,
+      inputs: { memberNumber: '12345' },
+    });
+
+    expect(runLog.outcome?.classification).toBe('success');
+
+    const assertionEntry = runLog.entries.find((e) => e.entryType === 'assertion');
+    expect(assertionEntry).toBeDefined();
+    if (assertionEntry?.entryType === 'assertion') {
+      expect(assertionEntry.checkpointId).toBe('on-detail-page');
+      expect(assertionEntry.passed).toBe(true);
+    }
+  });
+
+  test('failing text_present assertion stops the run with assertion_failed', { timeout: 30_000 }, async () => {
+    await page.goto(`${BASE_URL}/logout`);
+
+    const capability: Capability = {
+      ...makeLookupCapability(BASE_URL),
+      capabilityId: 'test-checkpoint-fail',
+      checkpoints: [
+        {
+          checkpointId: 'bogus-text-check',
+          afterStepId: 'click-member-row',
+          allOf: [
+            { assert: 'text_present', text: 'THIS TEXT DOES NOT EXIST ON THE PAGE' },
+          ],
+        },
+      ],
+    };
+
+    const { runLog } = await execute({
+      capability,
+      surface,
+      inputs: { memberNumber: '12345' },
+    });
+
+    expect(runLog.outcome?.classification).toBe('failed');
+    if (runLog.outcome?.classification === 'failed') {
+      expect(runLog.outcome.failureCode).toBe('assertion_failed');
+      expect(runLog.outcome.message).toContain('bogus-text-check');
+      expect(runLog.outcome.failedAtStepId).toBe('click-member-row');
+    }
+
+    const assertionEntry = runLog.entries.find((e) => e.entryType === 'assertion');
+    expect(assertionEntry).toBeDefined();
+    if (assertionEntry?.entryType === 'assertion') {
+      expect(assertionEntry.passed).toBe(false);
+    }
+  });
+
+  test('text_absent assertion passes when text is missing', { timeout: 30_000 }, async () => {
+    await page.goto(`${BASE_URL}/logout`);
+
+    const capability: Capability = {
+      ...makeLookupCapability(BASE_URL),
+      capabilityId: 'test-text-absent',
+      checkpoints: [
+        {
+          checkpointId: 'no-error-text',
+          afterStepId: 'click-member-row',
+          allOf: [
+            { assert: 'text_absent', text: 'No records matched the supplied criteria' },
+          ],
+        },
+      ],
+    };
+
+    const { runLog } = await execute({
+      capability,
+      surface,
+      inputs: { memberNumber: '12345' },
+    });
+
+    expect(runLog.outcome?.classification).toBe('success');
+    const assertionEntry = runLog.entries.find((e) => e.entryType === 'assertion');
+    expect(assertionEntry).toBeDefined();
+    if (assertionEntry?.entryType === 'assertion') {
+      expect(assertionEntry.passed).toBe(true);
+    }
+  });
+
+  test('element_present assertion passes when locator resolves', { timeout: 30_000 }, async () => {
+    await page.goto(`${BASE_URL}/logout`);
+
+    const capability: Capability = {
+      ...makeLookupCapability(BASE_URL),
+      capabilityId: 'test-element-present',
+      checkpoints: [
+        {
+          checkpointId: 'shares-grid-present',
+          afterStepId: 'click-member-row',
+          allOf: [
+            { assert: 'element_present', target: [{ strategy: 'css', selector: '#ctl00_ContentMain_grdShares' }] },
+          ],
+        },
+      ],
+    };
+
+    const { runLog } = await execute({
+      capability,
+      surface,
+      inputs: { memberNumber: '12345' },
+    });
+
+    expect(runLog.outcome?.classification).toBe('success');
+  });
+
+  test('element_present assertion fails when locator does not resolve', { timeout: 30_000 }, async () => {
+    await page.goto(`${BASE_URL}/logout`);
+
+    const capability: Capability = {
+      ...makeLookupCapability(BASE_URL),
+      capabilityId: 'test-element-missing',
+      checkpoints: [
+        {
+          checkpointId: 'ghost-element',
+          afterStepId: 'click-member-row',
+          allOf: [
+            { assert: 'element_present', target: [{ strategy: 'css', selector: '#does_not_exist' }] },
+          ],
+        },
+      ],
+    };
+
+    const { runLog } = await execute({
+      capability,
+      surface,
+      inputs: { memberNumber: '12345' },
+    });
+
+    expect(runLog.outcome?.classification).toBe('failed');
+    if (runLog.outcome?.classification === 'failed') {
+      expect(runLog.outcome.failureCode).toBe('assertion_failed');
+      expect(runLog.outcome.message).toContain('ghost-element');
+    }
+  });
+
+  test('url_matches assertion fails when pattern does not match', { timeout: 30_000 }, async () => {
+    await page.goto(`${BASE_URL}/logout`);
+
+    const capability: Capability = {
+      ...makeLookupCapability(BASE_URL),
+      capabilityId: 'test-url-mismatch',
+      checkpoints: [
+        {
+          checkpointId: 'wrong-url',
+          afterStepId: 'click-sign-in',
+          allOf: [
+            { assert: 'url_matches', pattern: '/members/detail' },
+          ],
+        },
+      ],
+    };
+
+    const { runLog } = await execute({
+      capability,
+      surface,
+      inputs: { memberNumber: '12345' },
+    });
+
+    expect(runLog.outcome?.classification).toBe('failed');
+    if (runLog.outcome?.classification === 'failed') {
+      expect(runLog.outcome.failureCode).toBe('assertion_failed');
+      expect(runLog.outcome.failedAtStepId).toBe('click-sign-in');
+    }
+
+    const actionEntries = runLog.entries.filter((e) => e.entryType === 'action');
+    expect(actionEntries.length).toBe(4);
+  });
+
+  test('all_of requires every assertion to pass', { timeout: 30_000 }, async () => {
+    await page.goto(`${BASE_URL}/logout`);
+
+    const capability: Capability = {
+      ...makeLookupCapability(BASE_URL),
+      capabilityId: 'test-all-of-partial',
+      checkpoints: [
+        {
+          checkpointId: 'mixed-assertions',
+          afterStepId: 'click-member-row',
+          allOf: [
+            { assert: 'text_present', text: 'SHARE SUMMARY' },
+            { assert: 'text_present', text: 'THIS WILL NOT BE FOUND' },
+          ],
+        },
+      ],
+    };
+
+    const { runLog } = await execute({
+      capability,
+      surface,
+      inputs: { memberNumber: '12345' },
+    });
+
+    expect(runLog.outcome?.classification).toBe('failed');
+    if (runLog.outcome?.classification === 'failed') {
+      expect(runLog.outcome.failureCode).toBe('assertion_failed');
+    }
+  });
+
+  test('checkpoint failure stops execution of subsequent steps', { timeout: 30_000 }, async () => {
+    await page.goto(`${BASE_URL}/logout`);
+
+    const capability: Capability = {
+      capabilityId: 'test-checkpoint-stops-steps',
+      name: 'Checkpoint Stops Execution',
+      version: 1,
+      goal: 'Verify checkpoint failure prevents remaining steps from running',
+      status: 'approved',
+      inputs: [],
+      outputs: [],
+      steps: [
+        {
+          stepId: 'navigate',
+          action: { actionType: 'navigate', url: `${BASE_URL}/login` },
+        },
+        {
+          stepId: 'never-reached',
+          action: { actionType: 'navigate', url: `${BASE_URL}/login` },
+        },
+      ],
+      checkpoints: [
+        {
+          checkpointId: 'early-fail',
+          afterStepId: 'navigate',
+          allOf: [
+            { assert: 'text_present', text: 'NONEXISTENT PAGE CONTENT' },
+          ],
+        },
+      ],
+      extractions: [],
+    };
+
+    const { runLog } = await execute({ capability, surface, inputs: {} });
+
+    const stepIds = runLog.entries
+      .filter((e) => e.entryType === 'action')
+      .map((e) => (e as Extract<typeof e, { entryType: 'action' }>).stepId);
+
+    expect(stepIds).toContain('navigate');
+    expect(stepIds).not.toContain('never-reached');
+    expect(runLog.outcome?.classification).toBe('failed');
+  });
+
   test('stops at the failed step and does not execute remaining steps', { timeout: 15_000 }, async () => {
     await page.goto(`${BASE_URL}/logout`);
 

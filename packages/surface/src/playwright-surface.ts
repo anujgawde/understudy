@@ -226,6 +226,15 @@ export class PlaywrightSurface implements Surface {
     return this.page.locator(`[data-understudy-act-target="${tempMarker}"]`);
   }
 
+  async pageUrl(): Promise<string> {
+    return this.page.url();
+  }
+
+  async hasText(text: string): Promise<boolean> {
+    const count = await this.page.getByText(text).count();
+    return count > 0;
+  }
+
   private async applyWaitCondition(condition: WaitCondition): Promise<void> {
     switch (condition.waitUntil) {
       case 'pageLoad':
