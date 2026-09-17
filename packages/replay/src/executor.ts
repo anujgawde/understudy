@@ -3,13 +3,12 @@ import type {
   Assertion,
   Capability,
   Checkpoint,
-  FailureCode,
-  Outcome,
   RunLog,
   RunLogEntry,
   ValueType,
 } from '@understudy/schemas';
 import type { Surface } from '@understudy/surface';
+import { classify, type TerminalState } from './classifier.js';
 
 export interface ExecutorOptions {
   capability: Capability;
@@ -124,7 +123,7 @@ export async function execute(options: ExecutorOptions): Promise<ExecutorResult>
   const entries: RunLogEntry[] = [];
   let sequence = 0;
 
-  let outcome: Outcome | undefined;
+  const terminal: TerminalState = { completedAllSteps: true, outputs: {} };
 
   for (const step of capability.steps) {
     const action = resolveActionInputs(step.action, inputs);
@@ -145,13 +144,10 @@ export async function execute(options: ExecutorOptions): Promise<ExecutorResult>
           resolvedByIndex: undefined,
           succeeded: false,
         });
-        outcome = {
-          classification: 'failed',
-          failureCode: 'locator_not_found',
-          message: `Step "${step.stepId}": no rung in the locator ladder matched`,
-          failedAtStepId: step.stepId,
-          interventionRaised: false,
-        };
+        terminal.completedAllSteps = false;
+        terminal.failedAtStepId = step.stepId;
+        terminal.failureCode = 'locator_not_found';
+        terminal.failureMessage = `Step "${step.stepId}": no rung in the locator ladder matched`;
         break;
       }
     }
@@ -169,17 +165,11 @@ export async function execute(options: ExecutorOptions): Promise<ExecutorResult>
         resolvedByIndex,
         succeeded: false,
       });
-
-      const failureCode: FailureCode =
+      terminal.completedAllSteps = false;
+      terminal.failedAtStepId = step.stepId;
+      terminal.failureCode =
         action.actionType === 'navigate' ? 'navigation_failed' : 'locator_not_found';
-
-      outcome = {
-        classification: 'failed',
-        failureCode,
-        message: `Step "${step.stepId}": ${error instanceof Error ? error.message : String(error)}`,
-        failedAtStepId: step.stepId,
-        interventionRaised: false,
-      };
+      terminal.failureMessage = `Step "${step.stepId}": ${error instanceof Error ? error.message : String(error)}`;
       break;
     }
 
@@ -212,23 +202,19 @@ export async function execute(options: ExecutorOptions): Promise<ExecutorResult>
 
       if (!result.passed) {
         const failedDescription = describeAssertion(result.failedAssertion!);
-        outcome = {
-          classification: 'failed',
-          failureCode: 'assertion_failed',
-          message: `Checkpoint "${checkpoint.checkpointId}" failed: ${failedDescription}`,
-          failedAtStepId: step.stepId,
-          interventionRaised: false,
-        };
+        terminal.completedAllSteps = false;
+        terminal.failedAtStepId = step.stepId;
+        terminal.failureCode = 'assertion_failed';
+        terminal.failureMessage = `Checkpoint "${checkpoint.checkpointId}" failed: ${failedDescription}`;
+        terminal.failedCheckpointId = checkpoint.checkpointId;
         break;
       }
     }
 
-    if (outcome) break;
+    if (!terminal.completedAllSteps) break;
   }
 
-  const outputs: Record<string, unknown> = {};
-
-  if (!outcome && capability.extractions.length > 0) {
+  if (terminal.completedAllSteps && capability.extractions.length > 0) {
     for (const extraction of capability.extractions) {
       let rawValue: string;
       try {
@@ -244,12 +230,9 @@ export async function execute(options: ExecutorOptions): Promise<ExecutorResult>
           rawValue: '',
           coerced: false,
         });
-        outcome = {
-          classification: 'failed',
-          failureCode: 'extraction_failed',
-          message: `Extraction "${extraction.outputName}": no rung in the locator ladder matched`,
-          interventionRaised: false,
-        };
+        terminal.completedAllSteps = false;
+        terminal.failureCode = 'extraction_failed';
+        terminal.failureMessage = `Extraction "${extraction.outputName}": no rung in the locator ladder matched`;
         break;
       }
 
@@ -266,18 +249,17 @@ export async function execute(options: ExecutorOptions): Promise<ExecutorResult>
       });
 
       if (!coercion.ok) {
-        outcome = {
-          classification: 'failed',
-          failureCode: 'type_coercion_failed',
-          message: `Extraction "${extraction.outputName}": ${coercion.reason}`,
-          interventionRaised: false,
-        };
+        terminal.completedAllSteps = false;
+        terminal.failureCode = 'type_coercion_failed';
+        terminal.failureMessage = `Extraction "${extraction.outputName}": ${coercion.reason}`;
         break;
       }
 
-      outputs[extraction.outputName] = coercion.value;
+      terminal.outputs[extraction.outputName] = coercion.value;
     }
   }
+
+  const outcome = classify(terminal, capability.businessOutcomes ?? []);
 
   const runLog: RunLog = {
     runId,
@@ -287,7 +269,7 @@ export async function execute(options: ExecutorOptions): Promise<ExecutorResult>
     startedAt,
     completedAt: new Date().toISOString(),
     entries,
-    outcome: outcome ?? { classification: 'success', outputs },
+    outcome,
   };
 
   return { runLog };

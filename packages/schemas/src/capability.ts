@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { LocatorLadder } from './locator';
+import { FailureCode } from './outcome';
 import { Step } from './step';
 
 export const ValueType = z.enum(['string', 'number', 'boolean', 'date']);
@@ -40,6 +41,26 @@ export const ExtractionRule = z.object({
   valueType: ValueType,
 });
 
+export const BusinessOutcomeCondition = z.discriminatedUnion('when', [
+  z.object({
+    when: z.literal('step_failed'),
+    stepId: z.string().min(1),
+    failureCode: FailureCode,
+  }),
+  z.object({
+    when: z.literal('checkpoint_failed'),
+    checkpointId: z.string().min(1),
+  }),
+]);
+export type BusinessOutcomeCondition = z.infer<typeof BusinessOutcomeCondition>;
+
+export const BusinessOutcomeRule = z.object({
+  code: z.string().min(1),
+  message: z.string().min(1),
+  condition: BusinessOutcomeCondition,
+});
+export type BusinessOutcomeRule = z.infer<typeof BusinessOutcomeRule>;
+
 export const CapabilityProvenance = z.object({
   discoveredByModel: z.string().min(1),
   discoveryRunId: z.string().min(1),
@@ -58,6 +79,7 @@ export const Capability = z
     steps: z.array(Step).min(1),
     checkpoints: z.array(Checkpoint),
     extractions: z.array(ExtractionRule),
+    businessOutcomes: z.array(BusinessOutcomeRule).default([]),
     provenance: CapabilityProvenance.optional(),
   })
   // Cross-field integrity. Both of these would otherwise surface mid-replay as
@@ -81,6 +103,27 @@ export const Capability = z
           code: 'custom',
           path: ['checkpoints', index, 'afterStepId'],
           message: `checkpoint runs after "${checkpoint.afterStepId}", which is not a step in this capability`,
+        });
+      }
+    });
+
+    const checkpointIds = new Set(capability.checkpoints.map((c) => c.checkpointId));
+    capability.businessOutcomes.forEach((rule, index) => {
+      if (rule.condition.when === 'step_failed' && !stepIds.has(rule.condition.stepId)) {
+        context.addIssue({
+          code: 'custom',
+          path: ['businessOutcomes', index, 'condition', 'stepId'],
+          message: `business outcome references step "${rule.condition.stepId}", which is not a step in this capability`,
+        });
+      }
+      if (
+        rule.condition.when === 'checkpoint_failed' &&
+        !checkpointIds.has(rule.condition.checkpointId)
+      ) {
+        context.addIssue({
+          code: 'custom',
+          path: ['businessOutcomes', index, 'condition', 'checkpointId'],
+          message: `business outcome references checkpoint "${rule.condition.checkpointId}", which is not a checkpoint in this capability`,
         });
       }
     });
