@@ -504,6 +504,227 @@ describe('Executor', () => {
     expect(actionEntries.length).toBe(4);
   });
 
+  test('extracts string output from the page', { timeout: 30_000 }, async () => {
+    await page.goto(`${BASE_URL}/logout`);
+
+    const capability: Capability = {
+      ...makeLookupCapability(BASE_URL),
+      capabilityId: 'test-extract-string',
+      outputs: [
+        { name: 'memberName', valueType: 'string', required: true },
+      ],
+      extractions: [
+        {
+          outputName: 'memberName',
+          target: [
+            {
+              strategy: 'css',
+              selector: '.ctl00_MemberInfo tr:first-child td:nth-child(4)',
+            },
+          ],
+          valueType: 'string',
+        },
+      ],
+    };
+
+    const { runLog } = await execute({
+      capability,
+      surface,
+      inputs: { memberNumber: '12345' },
+    });
+
+    expect(runLog.outcome?.classification).toBe('success');
+    if (runLog.outcome?.classification === 'success') {
+      expect(runLog.outcome.outputs['memberName']).toBe('JOHNSON, MARGARET A');
+    }
+
+    const extractionEntry = runLog.entries.find((e) => e.entryType === 'extraction');
+    expect(extractionEntry).toBeDefined();
+    if (extractionEntry?.entryType === 'extraction') {
+      expect(extractionEntry.outputName).toBe('memberName');
+      expect(extractionEntry.rawValue).toBe('JOHNSON, MARGARET A');
+      expect(extractionEntry.coerced).toBe(false);
+    }
+  });
+
+  test('extracts and coerces a numeric balance', { timeout: 30_000 }, async () => {
+    await page.goto(`${BASE_URL}/logout`);
+
+    const capability: Capability = {
+      ...makeLookupCapability(BASE_URL),
+      capabilityId: 'test-extract-number',
+      outputs: [
+        { name: 'savingsBalance', valueType: 'number', required: true },
+      ],
+      extractions: [
+        {
+          outputName: 'savingsBalance',
+          target: [
+            {
+              strategy: 'css',
+              selector: '#ctl00_ContentMain_grdShares tbody tr:first-child td:nth-child(3)',
+            },
+          ],
+          valueType: 'number',
+        },
+      ],
+    };
+
+    const { runLog } = await execute({
+      capability,
+      surface,
+      inputs: { memberNumber: '12345' },
+    });
+
+    expect(runLog.outcome?.classification).toBe('success');
+    if (runLog.outcome?.classification === 'success') {
+      expect(runLog.outcome.outputs['savingsBalance']).toBe(4182.9);
+    }
+
+    const extractionEntry = runLog.entries.find((e) => e.entryType === 'extraction');
+    expect(extractionEntry).toBeDefined();
+    if (extractionEntry?.entryType === 'extraction') {
+      expect(extractionEntry.coerced).toBe(true);
+    }
+  });
+
+  test('em-dash Available cell fails numeric coercion', { timeout: 30_000 }, async () => {
+    await page.goto(`${BASE_URL}/logout`);
+
+    const capability: Capability = {
+      ...makeLookupCapability(BASE_URL),
+      capabilityId: 'test-emdash-coercion',
+      outputs: [
+        { name: 'certificateAvailable', valueType: 'number', required: true },
+      ],
+      extractions: [
+        {
+          outputName: 'certificateAvailable',
+          target: [
+            {
+              strategy: 'css',
+              selector: '#ctl00_ContentMain_grdShares tbody tr:nth-child(3) td:nth-child(4)',
+            },
+          ],
+          valueType: 'number',
+        },
+      ],
+    };
+
+    const { runLog } = await execute({
+      capability,
+      surface,
+      inputs: { memberNumber: '12345' },
+    });
+
+    expect(runLog.outcome?.classification).toBe('failed');
+    if (runLog.outcome?.classification === 'failed') {
+      expect(runLog.outcome.failureCode).toBe('type_coercion_failed');
+      expect(runLog.outcome.message).toContain('certificateAvailable');
+    }
+
+    const extractionEntry = runLog.entries.find((e) => e.entryType === 'extraction');
+    expect(extractionEntry).toBeDefined();
+    if (extractionEntry?.entryType === 'extraction') {
+      expect(extractionEntry.rawValue).toBe('—');
+      expect(extractionEntry.coerced).toBe(false);
+    }
+  });
+
+  test('extraction with unresolvable locator fails with extraction_failed', { timeout: 30_000 }, async () => {
+    await page.goto(`${BASE_URL}/logout`);
+
+    const capability: Capability = {
+      ...makeLookupCapability(BASE_URL),
+      capabilityId: 'test-extract-missing',
+      outputs: [
+        { name: 'phantom', valueType: 'string', required: true },
+      ],
+      extractions: [
+        {
+          outputName: 'phantom',
+          target: [{ strategy: 'css', selector: '#does_not_exist_at_all' }],
+          valueType: 'string',
+        },
+      ],
+    };
+
+    const { runLog } = await execute({
+      capability,
+      surface,
+      inputs: { memberNumber: '12345' },
+    });
+
+    expect(runLog.outcome?.classification).toBe('failed');
+    if (runLog.outcome?.classification === 'failed') {
+      expect(runLog.outcome.failureCode).toBe('extraction_failed');
+      expect(runLog.outcome.message).toContain('phantom');
+    }
+  });
+
+  test('multiple extractions populate outputs and stop on first coercion failure', { timeout: 30_000 }, async () => {
+    await page.goto(`${BASE_URL}/logout`);
+
+    const capability: Capability = {
+      ...makeLookupCapability(BASE_URL),
+      capabilityId: 'test-multi-extract',
+      outputs: [
+        { name: 'memberName', valueType: 'string', required: true },
+        { name: 'certificateAvailable', valueType: 'number', required: true },
+        { name: 'savingsBalance', valueType: 'number', required: true },
+      ],
+      extractions: [
+        {
+          outputName: 'memberName',
+          target: [
+            {
+              strategy: 'css',
+              selector: '.ctl00_MemberInfo tr:first-child td:nth-child(4)',
+            },
+          ],
+          valueType: 'string',
+        },
+        {
+          outputName: 'certificateAvailable',
+          target: [
+            {
+              strategy: 'css',
+              selector: '#ctl00_ContentMain_grdShares tbody tr:nth-child(3) td:nth-child(4)',
+            },
+          ],
+          valueType: 'number',
+        },
+        {
+          outputName: 'savingsBalance',
+          target: [
+            {
+              strategy: 'css',
+              selector: '#ctl00_ContentMain_grdShares tbody tr:first-child td:nth-child(3)',
+            },
+          ],
+          valueType: 'number',
+        },
+      ],
+    };
+
+    const { runLog } = await execute({
+      capability,
+      surface,
+      inputs: { memberNumber: '12345' },
+    });
+
+    expect(runLog.outcome?.classification).toBe('failed');
+    if (runLog.outcome?.classification === 'failed') {
+      expect(runLog.outcome.failureCode).toBe('type_coercion_failed');
+      expect(runLog.outcome.message).toContain('certificateAvailable');
+    }
+
+    const extractionEntries = runLog.entries.filter((e) => e.entryType === 'extraction');
+    expect(extractionEntries).toHaveLength(2);
+    expect((extractionEntries[0] as { outputName: string }).outputName).toBe('memberName');
+    expect((extractionEntries[1] as { outputName: string }).outputName).toBe('certificateAvailable');
+  });
+
   test('all_of requires every assertion to pass', { timeout: 30_000 }, async () => {
     await page.goto(`${BASE_URL}/logout`);
 

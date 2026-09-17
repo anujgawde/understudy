@@ -7,6 +7,7 @@ import type {
   Outcome,
   RunLog,
   RunLogEntry,
+  ValueType,
 } from '@understudy/schemas';
 import type { Surface } from '@understudy/surface';
 
@@ -70,6 +71,37 @@ async function evaluateAssertion(assertion: Assertion, surface: Surface): Promis
       }
     case 'url_matches':
       return new RegExp(assertion.pattern).test(await surface.pageUrl());
+  }
+}
+
+function coerceValue(
+  raw: string,
+  valueType: ValueType,
+): { ok: true; value: unknown } | { ok: false; reason: string } {
+  switch (valueType) {
+    case 'string':
+      return { ok: true, value: raw };
+    case 'number': {
+      const cleaned = raw.replace(/[$,]/g, '');
+      const parsed = Number(cleaned);
+      if (cleaned === '' || Number.isNaN(parsed)) {
+        return { ok: false, reason: `cannot coerce "${raw}" to number` };
+      }
+      return { ok: true, value: parsed };
+    }
+    case 'boolean': {
+      const lower = raw.toLowerCase();
+      if (lower === 'true' || lower === 'yes' || lower === '1') return { ok: true, value: true };
+      if (lower === 'false' || lower === 'no' || lower === '0') return { ok: true, value: false };
+      return { ok: false, reason: `cannot coerce "${raw}" to boolean` };
+    }
+    case 'date': {
+      const timestamp = Date.parse(raw);
+      if (Number.isNaN(timestamp)) {
+        return { ok: false, reason: `cannot coerce "${raw}" to date` };
+      }
+      return { ok: true, value: new Date(timestamp).toISOString() };
+    }
   }
 }
 
@@ -194,6 +226,59 @@ export async function execute(options: ExecutorOptions): Promise<ExecutorResult>
     if (outcome) break;
   }
 
+  const outputs: Record<string, unknown> = {};
+
+  if (!outcome && capability.extractions.length > 0) {
+    for (const extraction of capability.extractions) {
+      let rawValue: string;
+      try {
+        const { text } = await surface.extractText(extraction.target);
+        rawValue = text;
+      } catch {
+        entries.push({
+          entryType: 'extraction',
+          sequence: sequence++,
+          occurredAt: new Date().toISOString(),
+          actor: 'system',
+          outputName: extraction.outputName,
+          rawValue: '',
+          coerced: false,
+        });
+        outcome = {
+          classification: 'failed',
+          failureCode: 'extraction_failed',
+          message: `Extraction "${extraction.outputName}": no rung in the locator ladder matched`,
+          interventionRaised: false,
+        };
+        break;
+      }
+
+      const coercion = coerceValue(rawValue, extraction.valueType);
+
+      entries.push({
+        entryType: 'extraction',
+        sequence: sequence++,
+        occurredAt: new Date().toISOString(),
+        actor: 'system',
+        outputName: extraction.outputName,
+        rawValue,
+        coerced: coercion.ok && extraction.valueType !== 'string',
+      });
+
+      if (!coercion.ok) {
+        outcome = {
+          classification: 'failed',
+          failureCode: 'type_coercion_failed',
+          message: `Extraction "${extraction.outputName}": ${coercion.reason}`,
+          interventionRaised: false,
+        };
+        break;
+      }
+
+      outputs[extraction.outputName] = coercion.value;
+    }
+  }
+
   const runLog: RunLog = {
     runId,
     mode: 'replay',
@@ -202,7 +287,7 @@ export async function execute(options: ExecutorOptions): Promise<ExecutorResult>
     startedAt,
     completedAt: new Date().toISOString(),
     entries,
-    outcome: outcome ?? { classification: 'success', outputs: {} },
+    outcome: outcome ?? { classification: 'success', outputs },
   };
 
   return { runLog };

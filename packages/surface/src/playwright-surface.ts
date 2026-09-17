@@ -86,6 +86,17 @@ export class PlaywrightSurface implements Surface {
     return { rungIndex, rung, matchCount };
   }
 
+  async extractText(
+    ladder: LocatorLadder,
+  ): Promise<{ text: string; resolveResult: ResolveResult }> {
+    const { rungIndex, rung, matchCount, locator } = await this.resolveElement(ladder);
+    const raw = await locator.textContent();
+    return {
+      text: (raw ?? '').trim(),
+      resolveResult: { rungIndex, rung, matchCount },
+    };
+  }
+
   private async resolveElement(
     ladder: LocatorLadder,
   ): Promise<ResolveResult & { locator: PlaywrightLocator }> {
