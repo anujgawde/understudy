@@ -9,25 +9,9 @@ export const WaitCondition = z.discriminatedUnion('waitUntil', [
 ]);
 export type WaitCondition = z.infer<typeof WaitCondition>;
 
-export const NavigateAction = z.object({
-  actionType: z.literal('navigate'),
-  url: z.url(),
-});
-
-export const ClickAction = z.object({
-  actionType: z.literal('click'),
-  target: LocatorLadder,
-});
-
-export const FillAction = z.object({
-  actionType: z.literal('fill'),
-  target: LocatorLadder,
-  value: z.string(),
-});
-
 export const Action = z.discriminatedUnion('actionType', [
-  NavigateAction,
-  ClickAction,
-  FillAction,
+  z.object({ actionType: z.literal('navigate'), url: z.url() }),
+  z.object({ actionType: z.literal('click'), target: LocatorLadder }),
+  z.object({ actionType: z.literal('fill'), target: LocatorLadder, value: z.string() }),
 ]);
 export type Action = z.infer<typeof Action>;

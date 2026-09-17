@@ -5,14 +5,7 @@ import { Capability } from '@understudy/schemas';
 import { PlaywrightSurface } from '@understudy/surface';
 import { execute } from '@understudy/replay';
 
-interface ParsedArguments {
-  artifactPath: string;
-  inputs: Record<string, string>;
-  headed: boolean;
-  outputPath: string | undefined;
-}
-
-function parseCliArguments(): ParsedArguments {
+function parseCliArguments() {
   const { values, positionals } = parseArgs({
     allowPositionals: true,
     options: {

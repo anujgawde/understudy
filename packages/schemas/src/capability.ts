@@ -6,20 +6,6 @@ import { Step } from './step';
 export const ValueType = z.enum(['string', 'number', 'boolean', 'date']);
 export type ValueType = z.infer<typeof ValueType>;
 
-export const InputDefinition = z.object({
-  name: z.string().min(1),
-  valueType: ValueType,
-  required: z.boolean(),
-  description: z.string().optional(),
-});
-
-export const OutputDefinition = z.object({
-  name: z.string().min(1),
-  valueType: ValueType,
-  required: z.boolean(),
-  description: z.string().optional(),
-});
-
 export const Assertion = z.discriminatedUnion('assert', [
   z.object({ assert: z.literal('text_present'), text: z.string().min(1) }),
   z.object({ assert: z.literal('text_absent'), text: z.string().min(1) }),
@@ -35,37 +21,22 @@ export const Checkpoint = z.object({
 });
 export type Checkpoint = z.infer<typeof Checkpoint>;
 
-export const ExtractionRule = z.object({
-  outputName: z.string().min(1),
-  target: LocatorLadder,
-  valueType: ValueType,
-});
-
-export const BusinessOutcomeCondition = z.discriminatedUnion('when', [
-  z.object({
-    when: z.literal('step_failed'),
-    stepId: z.string().min(1),
-    failureCode: FailureCode,
-  }),
-  z.object({
-    when: z.literal('checkpoint_failed'),
-    checkpointId: z.string().min(1),
-  }),
-]);
-export type BusinessOutcomeCondition = z.infer<typeof BusinessOutcomeCondition>;
-
 export const BusinessOutcomeRule = z.object({
   code: z.string().min(1),
   message: z.string().min(1),
-  condition: BusinessOutcomeCondition,
+  condition: z.discriminatedUnion('when', [
+    z.object({
+      when: z.literal('step_failed'),
+      stepId: z.string().min(1),
+      failureCode: FailureCode,
+    }),
+    z.object({
+      when: z.literal('checkpoint_failed'),
+      checkpointId: z.string().min(1),
+    }),
+  ]),
 });
 export type BusinessOutcomeRule = z.infer<typeof BusinessOutcomeRule>;
-
-export const CapabilityProvenance = z.object({
-  discoveredByModel: z.string().min(1),
-  discoveryRunId: z.string().min(1),
-  discoveredAt: z.iso.datetime(),
-});
 
 export const Capability = z
   .object({
@@ -74,13 +45,39 @@ export const Capability = z
     version: z.number().int().positive(),
     goal: z.string().min(1),
     status: z.enum(['draft', 'approved']),
-    inputs: z.array(InputDefinition),
-    outputs: z.array(OutputDefinition),
+    inputs: z.array(
+      z.object({
+        name: z.string().min(1),
+        valueType: ValueType,
+        required: z.boolean(),
+        description: z.string().optional(),
+      }),
+    ),
+    outputs: z.array(
+      z.object({
+        name: z.string().min(1),
+        valueType: ValueType,
+        required: z.boolean(),
+        description: z.string().optional(),
+      }),
+    ),
     steps: z.array(Step).min(1),
     checkpoints: z.array(Checkpoint),
-    extractions: z.array(ExtractionRule),
+    extractions: z.array(
+      z.object({
+        outputName: z.string().min(1),
+        target: LocatorLadder,
+        valueType: ValueType,
+      }),
+    ),
     businessOutcomes: z.array(BusinessOutcomeRule).default([]),
-    provenance: CapabilityProvenance.optional(),
+    provenance: z
+      .object({
+        discoveredByModel: z.string().min(1),
+        discoveryRunId: z.string().min(1),
+        discoveredAt: z.iso.datetime(),
+      })
+      .optional(),
   })
   // Cross-field integrity. Both of these would otherwise surface mid-replay as
   // a confusing runtime error rather than as a malformed artifact.

@@ -93,6 +93,7 @@ function makeLookupCapability(baseUrl: string): Capability {
     ],
     checkpoints: [],
     extractions: [],
+    businessOutcomes: [],
   };
 }
 
@@ -235,6 +236,7 @@ describe('Executor', () => {
       ],
       checkpoints: [],
       extractions: [],
+      businessOutcomes: [],
     };
 
     const { runLog } = await execute({ capability, surface, inputs: {} });
@@ -275,6 +277,7 @@ describe('Executor', () => {
       ],
       checkpoints: [],
       extractions: [],
+      businessOutcomes: [],
     };
 
     await expect(
@@ -301,6 +304,7 @@ describe('Executor', () => {
       ],
       checkpoints: [],
       extractions: [],
+      businessOutcomes: [],
     };
 
     const { runLog } = await execute({
@@ -786,6 +790,7 @@ describe('Executor', () => {
         },
       ],
       extractions: [],
+      businessOutcomes: [],
     };
 
     const { runLog } = await execute({ capability, surface, inputs: {} });
@@ -829,6 +834,7 @@ describe('Executor', () => {
       ],
       checkpoints: [],
       extractions: [],
+      businessOutcomes: [],
     };
 
     const { runLog } = await execute({ capability, surface, inputs: {} });

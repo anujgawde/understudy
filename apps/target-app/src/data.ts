@@ -158,8 +158,6 @@ export function searchMembers(criteria: {
   });
 }
 
-export const BRANCHES = ['ALL', 'MAIN', 'WEST', 'EAST', 'NORTH'];
-
 export const MAGIC_NOT_FOUND = '99999';
 export const MAGIC_VALIDATION_ERROR = '88888';
 export const MAGIC_SESSION_TIMEOUT = '77777';

@@ -752,4 +752,3 @@ export function memberDetailPage(member: {
   `;
 }
 
-export { escapeHtml };
