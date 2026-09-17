@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // tsup's declaration builder injects `baseUrl`, which TypeScript 6 rejects
+    // outright. Remove once tsup stops setting it.
+    "ignoreDeprecations": "6.0"
+  },
+  "include": ["src/**/*", "test/**/*"]
+}

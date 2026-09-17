@@ -1,0 +1,26 @@
+{
+  "name": "@understudy/schemas",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The artifact schema and replay contract — Zod schemas shared by discovery, replay, server, and console.",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "types": "./dist/index.d.ts",
+  "files": ["dist"],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "zod": "^4.6.5"
+  }
+}
