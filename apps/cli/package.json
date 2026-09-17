@@ -1,0 +1,16 @@
+{
+  "name": "@understudy/cli",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "CLI entry points for understudy commands.",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@understudy/replay": "*",
+    "@understudy/schemas": "*",
+    "@understudy/surface": "*"
+  }
+}
