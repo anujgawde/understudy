@@ -1,0 +1,28 @@
+{
+  "name": "@understudy/recorder",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Recorder — turns a discovery run log into a replayable capability artifact.",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@understudy/schemas": "*"
+  }
+}
