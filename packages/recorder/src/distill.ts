@@ -6,6 +6,24 @@ export interface DistilledStep {
   sequence: number;
   action: Action;
   observationBefore: Observation;
+  // null for navigate steps, which address a URL rather than an element.
+  elementRef: string | null;
+}
+
+// Discovery targets elements through the ephemeral handle the surface stamps on
+// during observe. That handle is renumbered on every observation, so it can
+// never reach the artifact — this reads back the element it named.
+export function actedElementRef(action: Action, observation: Observation): string | null {
+  if (action.actionType === 'navigate') return null;
+
+  const rung = action.target[0];
+  if (rung?.strategy !== 'css') return null;
+
+  return (
+    observation.elements.find(
+      (element) => rung.selector === `[data-understudy-ref="${element.elementRef}"]`,
+    )?.elementRef ?? null
+  );
 }
 
 function sameTarget(left: Action, right: Action): boolean {
@@ -55,7 +73,12 @@ export function distillTrace(runLog: RunLog): DistilledStep[] {
       steps.pop();
     }
 
-    steps.push({ sequence: entry.sequence, action, observationBefore });
+    steps.push({
+      sequence: entry.sequence,
+      action,
+      observationBefore,
+      elementRef: actedElementRef(action, observationBefore),
+    });
   }
 
   return steps;

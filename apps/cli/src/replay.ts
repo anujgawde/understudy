@@ -17,7 +17,9 @@ function parseCliArguments() {
 
   const artifactPath = positionals[0];
   if (!artifactPath) {
-    console.error('Usage: replay <artifact.json> [--input key=value ...] [--headed] [--output path]');
+    console.error(
+      'Usage: replay <artifact.json> [--input key=value ...] [--headed] [--output path]',
+    );
     process.exit(1);
   }
 

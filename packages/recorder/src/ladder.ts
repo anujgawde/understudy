@@ -1,22 +1,20 @@
 import type { Locator, LocatorLadder, Observation, ObservedElement } from '@understudy/schemas';
-import type { DistilledStep } from './distill.js';
 
 const plainIdentifier = /^[A-Za-z][\w-]*$/;
 
-// Discovery targets elements through the ephemeral handle the surface stamps on
-// during observe. That handle is renumbered on every observation, so it can
-// never reach the artifact — this maps it back to the element it named.
-function actedElement(step: DistilledStep): ObservedElement | null {
-  if (step.action.actionType === 'navigate') return null;
+// A table cell's accessible name is its own content — the value being read,
+// not a stable handle on where that value sits. Locating one by its name would
+// bake today's data into the artifact, so these are located by their label.
+const rolesNamedByTheirContent = new Set(['cell', 'columnheader', 'rowheader']);
 
-  const rung = step.action.target[0];
-  if (rung?.strategy !== 'css') return null;
-
-  return (
-    step.observationBefore.elements.find(
-      (element) => rung.selector === `[data-understudy-ref="${element.elementRef}"]`,
-    ) ?? null
-  );
+/**
+ * The human-readable label for an element: its own accessible name, unless that
+ * name is really the data it holds, in which case the neighbouring cell's text.
+ */
+export function labelFor(element: ObservedElement | undefined): string | undefined {
+  if (!element) return undefined;
+  if (rolesNamedByTheirContent.has(element.role)) return element.nearbyText?.[0];
+  return element.accessibleName ?? element.nearbyText?.[0];
 }
 
 function positionAmongSameRole(element: ObservedElement, observation: Observation): number {
@@ -26,13 +24,12 @@ function positionAmongSameRole(element: ObservedElement, observation: Observatio
 }
 
 /**
- * Propose a locator ladder for the element a step acted on, ordered most
- * durable first, deduped and capped at the three rungs the schema allows.
- * Returns null for navigate steps, which address a URL rather than an element.
+ * Propose a locator ladder for an observed element, ordered most durable first,
+ * deduped and capped at the three rungs the schema allows.
  */
-export function deriveLadder(step: DistilledStep): LocatorLadder | null {
-  const element = actedElement(step);
-  if (element === null) return null;
+export function deriveLadder(elementRef: string, observation: Observation): LocatorLadder | null {
+  const element = observation.elements.find((candidate) => candidate.elementRef === elementRef);
+  if (!element) return null;
 
   const candidates: Locator[] = [];
 
@@ -40,7 +37,9 @@ export function deriveLadder(step: DistilledStep): LocatorLadder | null {
     candidates.push({ strategy: 'css', selector: `[data-testid="${element.testId}"]` });
   }
 
-  if (element.accessibleName) {
+  const namedByItsContent = rolesNamedByTheirContent.has(element.role);
+
+  if (element.accessibleName && !namedByItsContent) {
     candidates.push({
       strategy: 'role',
       role: element.role,
@@ -50,13 +49,14 @@ export function deriveLadder(step: DistilledStep): LocatorLadder | null {
       candidates.push({ strategy: 'text', text: element.accessibleName, matchExactly: true });
     }
   } else if (element.nearbyText?.[0]) {
-    // No accessible name means the page labelled this control with a bare cell
-    // rather than a <label for>; walk from that cell to the control instead.
+    // Nothing usable of its own: either the page labelled this control with a
+    // bare cell rather than a <label for>, or it is a cell whose only name is
+    // the data inside it. Walk from the neighbouring label instead.
     candidates.push({
       strategy: 'adjacent',
       labelText: element.nearbyText[0],
       direction: 'next',
-      targetRole: element.role,
+      ...(namedByItsContent ? {} : { targetRole: element.role }),
     });
   }
 
@@ -74,7 +74,7 @@ export function deriveLadder(step: DistilledStep): LocatorLadder | null {
   candidates.push({
     strategy: 'role',
     role: element.role,
-    matchIndex: positionAmongSameRole(element, step.observationBefore),
+    matchIndex: positionAmongSameRole(element, observation),
   });
 
   const seen = new Set<string>();

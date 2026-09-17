@@ -7,6 +7,7 @@ import { AnthropicProvider, GeminiProvider } from '@understudy/model-provider';
 import type { RunLogEntry } from '@understudy/schemas';
 import { PlaywrightSurface } from '@understudy/surface';
 import { discover } from '@understudy/discovery';
+import { recordCapability } from '@understudy/recorder';
 
 function parseCliArguments() {
   const { values, positionals } = parseArgs({
@@ -44,6 +45,18 @@ function parseCliArguments() {
     modelId: values.model,
     maxSteps: values.maxSteps ? parseInt(values.maxSteps, 10) : undefined,
   };
+}
+
+function capabilityIdFrom(goal: string): string {
+  const slug = goal
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .split('-')
+    .slice(0, 6)
+    .join('-');
+
+  return slug || 'discovered-capability';
 }
 
 function formatEntryForConsole(entry: RunLogEntry): string | null {
@@ -107,10 +120,27 @@ async function main(): Promise<void> {
     console.error(`Run log: ${runLogPath}`);
     console.error(`Steps: ${runLog.entries.filter((e) => e.entryType === 'action').length}`);
 
-    console.log(JSON.stringify(runLog, null, 2));
+    if (runLog.outcome?.classification !== 'success') {
+      console.log(JSON.stringify(runLog, null, 2));
+      process.exit(1);
+    }
 
-    const exitCode = runLog.outcome?.classification === 'success' ? 0 : 1;
-    process.exit(exitCode);
+    const capability = recordCapability(runLog, {
+      capabilityId: capabilityIdFrom(args.goal),
+      name: args.goal,
+      modelId: modelProvider.modelId,
+    });
+    const capabilityPath = join(args.outputDirectory, `${capability.capabilityId}.capability.json`);
+    await writeFile(capabilityPath, JSON.stringify(capability, null, 2) + '\n', 'utf-8');
+
+    console.error(`Draft capability: ${capabilityPath}`);
+    console.error(
+      `Inputs: ${capability.inputs.map((input) => input.name).join(', ') || 'none'} · ` +
+        `Outputs: ${capability.outputs.map((output) => output.name).join(', ') || 'none'}`,
+    );
+
+    console.log(JSON.stringify(capability, null, 2));
+    process.exit(0);
   } finally {
     await page.close();
     await browser.close();
