@@ -1,0 +1,27 @@
+{
+  "name": "@understudy/replay",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Replay engine — deterministic executor that walks a capability artifact against a Surface.",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "types": "./dist/index.d.ts",
+  "files": ["dist"],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@understudy/schemas": "*",
+    "@understudy/surface": "*"
+  }
+}
