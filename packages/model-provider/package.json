@@ -1,0 +1,27 @@
+{
+  "name": "@understudy/model-provider",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "ModelProvider interface and LLM adapters for discovery runs.",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "types": "./dist/index.d.ts",
+  "files": ["dist"],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.52.0",
+    "@google/genai": "^2.23.0"
+  }
+}

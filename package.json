@@ -22,6 +22,7 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "discover": "tsx apps/cli/src/discover.ts",
     "replay": "tsx apps/cli/src/replay.ts",
     "test": "vitest run",
     "test:watch": "vitest"

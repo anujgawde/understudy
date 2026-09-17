@@ -9,6 +9,8 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@understudy/discovery": "*",
+    "@understudy/model-provider": "*",
     "@understudy/replay": "*",
     "@understudy/schemas": "*",
     "@understudy/surface": "*"

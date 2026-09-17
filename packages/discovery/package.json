@@ -1,0 +1,28 @@
+{
+  "name": "@understudy/discovery",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Discovery loop — LLM-driven exploration of a target app via observe/act/extract/finish tools.",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "types": "./dist/index.d.ts",
+  "files": ["dist"],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@understudy/model-provider": "*",
+    "@understudy/schemas": "*",
+    "@understudy/surface": "*"
+  }
+}
