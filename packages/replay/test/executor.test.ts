@@ -34,7 +34,7 @@ function makeLookupCapability(baseUrl: string): Capability {
     goal: 'Log in, search for a member by number, and navigate to their detail page',
     status: 'approved',
     inputs: [
-      { name: 'memberNumber', valueType: 'string', required: true },
+      { name: 'memberNumber', valueType: 'string', required: true, secret: false },
     ],
     outputs: [],
     steps: [
@@ -263,7 +263,7 @@ describe('Executor', () => {
       version: 1,
       goal: 'Reference an input that was not supplied',
       status: 'approved',
-      inputs: [{ name: 'memberNumber', valueType: 'string', required: true }],
+      inputs: [{ name: 'memberNumber', valueType: 'string', required: true, secret: false }],
       outputs: [],
       steps: [
         {

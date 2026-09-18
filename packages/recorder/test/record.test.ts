@@ -3,6 +3,7 @@ import {
   Capability,
   type Action,
   type ObservedElement,
+  type Policy,
   type RunLog,
   type RunLogEntry,
 } from '@understudy/schemas';
@@ -112,6 +113,16 @@ const options = {
   modelId: 'test-model',
 };
 
+const policy: Policy = {
+  policyId: 'test-policy',
+  name: 'Test Policy',
+  allowedOrigins: ['http://localhost:4100'],
+  rules: [{ actionClass: 'mutate', decision: 'allow' }],
+  redactedFieldNames: ['password'],
+  redactedPatterns: [],
+  maxStepsPerRun: 30,
+};
+
 describe('Capability recording', () => {
   test('emits a draft artifact that satisfies the schema', () => {
     const capability = recordCapability(loginAndLookUp, options);
@@ -129,7 +140,13 @@ describe('Capability recording', () => {
     const capability = recordCapability(loginAndLookUp, options);
 
     expect(capability.inputs).toEqual([
-      { name: 'memberNumber', valueType: 'string', required: true, description: 'Member Number' },
+      {
+        name: 'memberNumber',
+        valueType: 'string',
+        required: true,
+        secret: false,
+        description: 'Member Number',
+      },
     ]);
 
     const memberNumberStep = capability.steps.find((step) => step.stepId === 'fill-memberNumber');
@@ -144,6 +161,20 @@ describe('Capability recording', () => {
       .filter(Boolean);
 
     expect(values).toEqual(['analyst', 'hunter2', '{{memberNumber}}']);
+    expect(capability.inputs.map((input) => input.name)).not.toContain('userId');
+  });
+
+  test('under a policy, a credential is held by reference instead of inlined', () => {
+    const capability = recordCapability(loginAndLookUp, { ...options, policy });
+
+    const password = capability.inputs.find((input) => input.name === 'password');
+    expect(password).toMatchObject({ required: true, secret: true });
+
+    const passwordStep = capability.steps.find((step) => step.stepId === 'fill-password');
+    expect(passwordStep?.action).toMatchObject({ value: '{{password}}' });
+    expect(JSON.stringify(capability)).not.toContain('hunter2');
+
+    // The user ID is not a sensitive field, so it stays a constant of the flow.
     expect(capability.inputs.map((input) => input.name)).not.toContain('userId');
   });
 

@@ -1,9 +1,9 @@
 {
-  "name": "@understudy/recorder",
+  "name": "@understudy/redaction",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Recorder — turns a discovery run log into a replayable capability artifact.",
+  "description": "Redaction — strips credentials and PII at the run log and capability write boundary.",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -23,12 +23,6 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@understudy/redaction": "*",
     "@understudy/schemas": "*"
-  },
-  "devDependencies": {
-    "@understudy/replay": "*",
-    "@understudy/surface": "*",
-    "playwright": "^1.49.1"
   }
 }

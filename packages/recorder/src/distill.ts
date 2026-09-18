@@ -1,14 +1,5 @@
 import type { Action, Observation, RunLog } from '@understudy/schemas';
-
-export interface DistilledStep {
-  // Sequence of the originating run log entry, so a proposed step stays
-  // traceable back to the moment of the run that produced it.
-  sequence: number;
-  action: Action;
-  observationBefore: Observation;
-  // null for navigate steps, which address a URL rather than an element.
-  elementRef: string | null;
-}
+import type { DistilledStep } from './types.js';
 
 // Discovery targets elements through the ephemeral handle the surface stamps on
 // during observe. That handle is renumbered on every observation, so it can

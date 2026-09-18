@@ -6,14 +6,10 @@ import type {
   Step,
   ValueType,
 } from '@understudy/schemas';
+import { isSensitiveField } from '@understudy/redaction';
 import { distillTrace } from './distill.js';
 import { deriveLadder, labelFor } from './ladder.js';
-
-export interface RecordingOptions {
-  capabilityId: string;
-  name: string;
-  modelId: string;
-}
+import type { RecordingOptions } from './types.js';
 
 interface ExtractedValue {
   rawValue: string;
@@ -117,18 +113,29 @@ export function recordCapability(runLog: RunLog, options: RecordingOptions): Cap
       action = { ...action, target };
     }
 
-    if (action.actionType === 'fill' && valueCameFromOutside(action.value, runLog)) {
-      const name = uniqueName(
-        identifierFrom(label ?? '') || `input${inputs.length + 1}`,
-        takenValueNames,
-      );
-      inputs.push({
-        name,
-        valueType: 'string',
-        required: true,
-        ...(label && { description: label }),
-      });
-      action = { ...action, value: `{{${name}}}` };
+    if (action.actionType === 'fill') {
+      // A secret is parameterised whether or not it can be traced to somewhere
+      // outside the page: inlining it as a constant of the flow is exactly the
+      // leak this is here to prevent.
+      const secret =
+        element !== undefined && options.policy !== undefined
+          ? isSensitiveField(options.policy, element)
+          : false;
+
+      if (secret || valueCameFromOutside(action.value, runLog)) {
+        const name = uniqueName(
+          identifierFrom(label ?? '') || `input${inputs.length + 1}`,
+          takenValueNames,
+        );
+        inputs.push({
+          name,
+          valueType: 'string',
+          required: true,
+          secret,
+          ...(label && { description: label }),
+        });
+        action = { ...action, value: `{{${name}}}` };
+      }
     }
 
     const after = observations.find((entry) => entry.sequence > distilled.sequence);

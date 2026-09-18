@@ -236,7 +236,7 @@ describe('policy enforcement during discovery', () => {
       finishTurn(),
     ]);
 
-    const { runLog } = await discover({
+    await discover({
       goal: 'test',
       startUrl: 'http://localhost:3000',
       surface,

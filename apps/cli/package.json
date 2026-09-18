@@ -12,6 +12,7 @@
     "@understudy/discovery": "*",
     "@understudy/model-provider": "*",
     "@understudy/recorder": "*",
+    "@understudy/redaction": "*",
     "@understudy/replay": "*",
     "@understudy/schemas": "*",
     "@understudy/surface": "*"

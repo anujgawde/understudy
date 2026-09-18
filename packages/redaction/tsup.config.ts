@@ -8,5 +8,5 @@ export default defineConfig({
   clean: true,
   target: 'node24',
   treeshake: true,
-  external: ['@understudy/schemas', '@understudy/redaction'],
+  external: ['@understudy/schemas'],
 });

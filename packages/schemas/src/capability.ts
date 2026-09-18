@@ -51,6 +51,10 @@ export const Capability = z
         valueType: ValueType,
         required: z.boolean(),
         description: z.string().optional(),
+        // A secret is held by reference: the step that consumes it carries
+        // "{{name}}", never the value, so the artifact stays safe to read and
+        // the credential is supplied at replay time instead.
+        secret: z.boolean().default(false),
       }),
     ),
     outputs: z.array(

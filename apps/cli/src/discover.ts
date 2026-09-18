@@ -4,10 +4,12 @@ import { parseArgs } from 'node:util';
 import { chromium } from 'playwright';
 import type { ModelProvider } from '@understudy/model-provider';
 import { AnthropicProvider, GeminiProvider } from '@understudy/model-provider';
-import type { RunLogEntry } from '@understudy/schemas';
+import type { Policy, RunLogEntry } from '@understudy/schemas';
 import { PlaywrightSurface } from '@understudy/surface';
 import { discover } from '@understudy/discovery';
 import { recordCapability } from '@understudy/recorder';
+import { redactCapability, redactRunLog, redactText } from '@understudy/redaction';
+import { defaultPolicy } from './policy.js';
 
 function parseCliArguments() {
   const { values, positionals } = parseArgs({
@@ -59,7 +61,7 @@ function capabilityIdFrom(goal: string): string {
   return slug || 'discovered-capability';
 }
 
-function formatEntryForConsole(entry: RunLogEntry): string | null {
+function formatEntryForConsole(entry: RunLogEntry, policy: Policy): string | null {
   switch (entry.entryType) {
     case 'rationale':
       return `  [model] ${entry.text}`;
@@ -70,7 +72,7 @@ function formatEntryForConsole(entry: RunLogEntry): string | null {
     case 'policy_decision':
       return `  [policy] ${entry.actionClass} → ${entry.decision}: ${entry.reason}`;
     case 'extraction':
-      return `  [extract] ${entry.outputName} = "${entry.rawValue}"`;
+      return `  [extract] ${entry.outputName} = "${redactText(entry.rawValue, policy)}"`;
     default:
       return null;
   }
@@ -98,18 +100,27 @@ async function main(): Promise<void> {
   const screenshotDirectory = join(args.outputDirectory, 'screenshots');
   const surface = new PlaywrightSurface(page, { screenshotDirectory });
 
+  const policy = defaultPolicy(args.startUrl, args.maxSteps ?? 30);
+
   try {
-    const { runLog } = await discover({
+    const { runLog: recordedRunLog } = await discover({
       goal: args.goal,
       startUrl: args.startUrl,
       surface,
       modelProvider,
+      policy,
       maxSteps: args.maxSteps,
       onEntry(entry) {
-        const line = formatEntryForConsole(entry);
+        const line = formatEntryForConsole(entry, policy);
         if (line) console.error(line);
       },
     });
+
+    // Redaction happens at the boundary, not at the source: the recorder still
+    // sees the real values, because it has to tell a value that came from
+    // outside the page from a constant of the flow. Only what gets written out
+    // is scrubbed.
+    const runLog = redactRunLog(recordedRunLog, policy);
 
     await mkdir(args.outputDirectory, { recursive: true });
     const runLogPath = join(args.outputDirectory, `${runLog.runId}.runlog.json`);
@@ -125,11 +136,15 @@ async function main(): Promise<void> {
       process.exit(1);
     }
 
-    const capability = recordCapability(runLog, {
-      capabilityId: capabilityIdFrom(args.goal),
-      name: args.goal,
-      modelId: modelProvider.modelId,
-    });
+    const capability = redactCapability(
+      recordCapability(recordedRunLog, {
+        capabilityId: capabilityIdFrom(args.goal),
+        name: args.goal,
+        modelId: modelProvider.modelId,
+        policy,
+      }),
+      policy,
+    );
     const capabilityPath = join(args.outputDirectory, `${capability.capabilityId}.capability.json`);
     await writeFile(capabilityPath, JSON.stringify(capability, null, 2) + '\n', 'utf-8');
 
