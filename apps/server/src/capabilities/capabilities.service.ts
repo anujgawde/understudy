@@ -1,14 +1,19 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Capability } from '@understudy/schemas';
 
 @Injectable()
 export class CapabilitiesService {
   private capabilities = new Map<string, Capability>();
 
-  create(data: unknown): Capability {
-    const capability = Capability.parse(data);
-    this.capabilities.set(capability.capabilityId, capability);
-    return capability;
+  save(data: unknown): Capability {
+    const parsed = Capability.safeParse(data);
+    if (!parsed.success) {
+      throw new BadRequestException(
+        parsed.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`),
+      );
+    }
+    this.capabilities.set(parsed.data.capabilityId, parsed.data);
+    return parsed.data;
   }
 
   findAll(): Capability[] {
@@ -24,15 +29,8 @@ export class CapabilitiesService {
   }
 
   approve(capabilityId: string): Capability {
-    const capability = this.findOne(capabilityId);
-    const approved = { ...capability, status: 'approved' as const };
+    const approved: Capability = { ...this.findOne(capabilityId), status: 'approved' };
     this.capabilities.set(capabilityId, approved);
     return approved;
-  }
-
-  delete(capabilityId: string): void {
-    if (!this.capabilities.delete(capabilityId)) {
-      throw new NotFoundException(`Capability "${capabilityId}" not found`);
-    }
   }
 }

@@ -52,5 +52,16 @@ export default tseslint.config(
     },
   },
 
+  // Nest resolves constructor dependencies from the classes emitted into
+  // design:paramtypes, so an injected class has to survive as a value import.
+  // The rule cannot see that decorator metadata is a runtime use and would
+  // "fix" every provider into a type import, breaking injection at boot.
+  {
+    files: ['apps/server/**/*.ts'],
+    rules: {
+      '@typescript-eslint/consistent-type-imports': 'off',
+    },
+  },
+
   prettier,
 );

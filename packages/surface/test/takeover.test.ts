@@ -8,7 +8,8 @@ import { OperatorTakeover } from '../src/takeover.js';
 
 const thisFile = fileURLToPath(import.meta.url);
 const repoRoot = resolve(dirname(thisFile), '..', '..', '..');
-const PORT = 4328;
+// 4327/4328 belong to replay's resume test, which spawns a second app on PORT+1.
+const PORT = 4326;
 const BASE_URL = `http://127.0.0.1:${PORT}`;
 
 async function waitForHealth(url: string, timeoutMilliseconds = 15_000): Promise<void> {

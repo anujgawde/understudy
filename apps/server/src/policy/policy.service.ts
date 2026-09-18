@@ -1,14 +1,19 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Policy } from '@understudy/schemas';
 
 @Injectable()
 export class PolicyService {
   private policies = new Map<string, Policy>();
 
-  create(data: unknown): Policy {
-    const policy = Policy.parse(data);
-    this.policies.set(policy.policyId, policy);
-    return policy;
+  save(data: unknown): Policy {
+    const parsed = Policy.safeParse(data);
+    if (!parsed.success) {
+      throw new BadRequestException(
+        parsed.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`),
+      );
+    }
+    this.policies.set(parsed.data.policyId, parsed.data);
+    return parsed.data;
   }
 
   findAll(): Policy[] {
@@ -21,17 +26,5 @@ export class PolicyService {
       throw new NotFoundException(`Policy "${policyId}" not found`);
     }
     return policy;
-  }
-
-  upsert(data: unknown): Policy {
-    const policy = Policy.parse(data);
-    this.policies.set(policy.policyId, policy);
-    return policy;
-  }
-
-  delete(policyId: string): void {
-    if (!this.policies.delete(policyId)) {
-      throw new NotFoundException(`Policy "${policyId}" not found`);
-    }
   }
 }

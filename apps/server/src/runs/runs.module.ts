@@ -1,8 +1,11 @@
 import { Module } from '@nestjs/common';
+import { RunsController } from './runs.controller.js';
+import { RunsGateway } from './runs.gateway.js';
 import { RunsService } from './runs.service.js';
 
 @Module({
-  providers: [RunsService],
+  controllers: [RunsController],
+  providers: [RunsService, RunsGateway],
   exports: [RunsService],
 })
 export class RunsModule {}
