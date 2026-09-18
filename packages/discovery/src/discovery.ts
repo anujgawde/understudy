@@ -1,6 +1,5 @@
 import type {
   ConversationMessage,
-  ModelProvider,
   ToolCall,
   ToolResult,
 } from '@understudy/model-provider';
@@ -16,27 +15,7 @@ import type {
 import type { Surface } from '@understudy/surface';
 import { buildSystemPrompt } from './prompt.js';
 import { discoveryTools } from './tools.js';
-
-export interface DiscoveryOptions {
-  goal: string;
-  startUrl: string;
-  surface: Surface;
-  modelProvider: ModelProvider;
-  policy?: Policy;
-  maxSteps?: number;
-  onEntry?: (entry: RunLogEntry) => void;
-}
-
-export interface DiscoveryResult {
-  runLog: RunLog;
-}
-
-interface FinishPayload {
-  success: boolean;
-  outputs?: Record<string, string>;
-  businessOutcomeCode?: string;
-  summary: string;
-}
+import type { DiscoveryOptions, DiscoveryResult, FinishPayload } from './types.js';
 
 function classifyAction(action: Action): ActionClass {
   switch (action.actionType) {
@@ -134,7 +113,7 @@ function buildActionFromToolInput(input: Record<string, unknown>): Action {
 }
 
 export async function discover(options: DiscoveryOptions): Promise<DiscoveryResult> {
-  const { goal, startUrl, surface, modelProvider, policy, onEntry } = options;
+  const { goal, startUrl, surface, modelProvider, policy, onEntry, onConfirmAction } = options;
   const maxSteps = options.maxSteps ?? policy?.maxStepsPerRun ?? 30;
   const runId = crypto.randomUUID();
   const startedAt = new Date().toISOString();
@@ -213,6 +192,7 @@ export async function discover(options: DiscoveryOptions): Promise<DiscoveryResu
         entries,
         sequence,
         addEntry,
+        onConfirmAction,
       );
       sequence = result.nextSequence;
       toolResults.push(result.toolResult);
@@ -268,13 +248,14 @@ async function executeToolCall(
   entries: RunLogEntry[],
   sequence: number,
   addEntry: (entry: RunLogEntry) => void,
+  onConfirmAction?: DiscoveryOptions['onConfirmAction'],
 ): Promise<ToolCallResult> {
   switch (toolCall.toolName) {
     case 'observe':
       return handleObserve(toolCall, surface, sequence, addEntry);
 
     case 'act':
-      return handleAct(toolCall, surface, policy, sequence, addEntry);
+      return handleAct(toolCall, surface, policy, sequence, addEntry, onConfirmAction);
 
     case 'extract':
       return handleExtract(toolCall, surface, sequence, addEntry);
@@ -327,6 +308,7 @@ async function handleAct(
   policy: Policy | undefined,
   sequence: number,
   addEntry: (entry: RunLogEntry) => void,
+  onConfirmAction?: DiscoveryOptions['onConfirmAction'],
 ): Promise<ToolCallResult> {
   let action: Action;
   try {
@@ -377,6 +359,33 @@ async function handleAct(
         nextSequence: sequence,
         finishPayload: null,
       };
+    }
+
+    if (policyResult.decision === 'confirm') {
+      const approved = onConfirmAction
+        ? await onConfirmAction({ action, actionClass, reason: policyResult.reason })
+        : false;
+
+      if (!approved) {
+        addEntry({
+          entryType: 'action',
+          sequence: sequence++,
+          occurredAt: new Date().toISOString(),
+          actor: 'model',
+          action,
+          succeeded: false,
+        });
+
+        return {
+          toolResult: {
+            toolCallId: toolCall.toolCallId,
+            content: `Action requires confirmation and was ${onConfirmAction ? 'rejected by the operator' : 'denied (no confirmation handler)'}. Choose a different approach.`,
+            isError: true,
+          },
+          nextSequence: sequence,
+          finishPayload: null,
+        };
+      }
     }
   }
 
