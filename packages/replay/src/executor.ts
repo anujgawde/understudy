@@ -23,12 +23,35 @@ export interface ExecutorOptions {
   inputs: Record<string, string>;
   runId?: string;
   session?: SessionContext;
+  // Set when an operator has handed the session back. The step named here is
+  // re-entered, but only once the gate below confirms the page still satisfies
+  // what the previous step established.
+  resumeAtStepId?: string;
 }
 
 export interface ExecutorResult {
   runLog: RunLog;
   intervention?: Intervention;
 }
+
+const AUTH_URL_PATTERN = /(^|[/.])(login|log-in|signin|sign-in|auth|sso|session)([/?#]|$)/i;
+
+// Deliberately generic: a password field on screen or an auth-shaped URL are the
+// two signals that hold across arbitrary web apps, so no target-specific marker
+// is baked in here.
+async function looksLikeAuthPage(surface: Surface): Promise<boolean> {
+  if (AUTH_URL_PATTERN.test(await surface.pageUrl())) return true;
+  try {
+    await surface.resolve([{ strategy: 'css', selector: 'input[type="password"]' }]);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// Only a run that had already cleared the auth wall can be said to have lost the
+// session; a capability that simply starts on a login page has not.
+const AMBIGUOUS_FAILURES = new Set(['locator_not_found', 'assertion_failed', 'extraction_failed']);
 
 function substituteInputs(value: string, inputs: Record<string, string>): string {
   return value.replace(/\{\{(\w+)\}\}/g, (_match, inputName: string) => {
@@ -125,6 +148,44 @@ async function evaluateCheckpoint(
   return { passed: true };
 }
 
+export type ReassertResult =
+  | { held: true }
+  | { held: false; reason: string; checkpointId?: string };
+
+// An operator who took the session over may have navigated anywhere. Before the
+// run is allowed to replay into the page they left behind, the checkpoints that
+// the previous step established have to still hold.
+export async function reassert(
+  capability: Capability,
+  surface: Surface,
+  resumeAtStepId: string,
+): Promise<ReassertResult> {
+  const resumeIndex = capability.steps.findIndex((step) => step.stepId === resumeAtStepId);
+  if (resumeIndex === -1) {
+    return { held: false, reason: `step "${resumeAtStepId}" is not part of this capability` };
+  }
+
+  const previousStep = capability.steps[resumeIndex - 1];
+  if (!previousStep) return { held: true };
+
+  const guarding = capability.checkpoints.filter(
+    (checkpoint) => checkpoint.afterStepId === previousStep.stepId,
+  );
+
+  for (const checkpoint of guarding) {
+    const result = await evaluateCheckpoint(checkpoint, surface);
+    if (!result.passed) {
+      return {
+        held: false,
+        reason: `checkpoint "${checkpoint.checkpointId}" no longer holds: ${describeAssertion(result.failedAssertion!)}`,
+        checkpointId: checkpoint.checkpointId,
+      };
+    }
+  }
+
+  return { held: true };
+}
+
 export async function execute(options: ExecutorOptions): Promise<ExecutorResult> {
   const { capability, surface, inputs } = options;
   const runId = options.runId ?? crypto.randomUUID();
@@ -134,8 +195,40 @@ export async function execute(options: ExecutorOptions): Promise<ExecutorResult>
 
   const terminal: TerminalState = { completedAllSteps: true, outputs: {} };
   let lastSuccessfulStepId: string | undefined;
+  let clearedAuth = false;
+  let stepsToRun = capability.steps;
 
-  for (const step of capability.steps) {
+  if (options.resumeAtStepId) {
+    const gate = await reassert(capability, surface, options.resumeAtStepId);
+
+    if (gate.held) {
+      const resumeIndex = capability.steps.findIndex(
+        (step) => step.stepId === options.resumeAtStepId,
+      );
+      stepsToRun = capability.steps.slice(resumeIndex);
+      clearedAuth = !(await looksLikeAuthPage(surface));
+    } else {
+      stepsToRun = [];
+
+      if (gate.checkpointId) {
+        entries.push({
+          entryType: 'assertion',
+          sequence: sequence++,
+          occurredAt: new Date().toISOString(),
+          actor: 'system',
+          checkpointId: gate.checkpointId,
+          passed: false,
+        });
+      }
+
+      terminal.completedAllSteps = false;
+      terminal.failedAtStepId = options.resumeAtStepId;
+      terminal.failureCode = 'assertion_failed';
+      terminal.failureMessage = `Cannot resume at "${options.resumeAtStepId}": ${gate.reason}`;
+    }
+  }
+
+  for (const step of stepsToRun) {
     const action = resolveActionInputs(step.action, inputs);
     let resolvedByIndex: number | undefined;
 
@@ -194,6 +287,8 @@ export async function execute(options: ExecutorOptions): Promise<ExecutorResult>
       succeeded: true,
     });
     lastSuccessfulStepId = step.stepId;
+
+    if (!clearedAuth && !(await looksLikeAuthPage(surface))) clearedAuth = true;
 
     const stepCheckpoints = capability.checkpoints.filter(
       (checkpoint) => checkpoint.afterStepId === step.stepId,
@@ -268,6 +363,19 @@ export async function execute(options: ExecutorOptions): Promise<ExecutorResult>
 
       terminal.outputs[extraction.outputName] = coercion.value;
     }
+  }
+
+  // A run that was authenticated and is now staring at a login page did not fail
+  // to find an element — it lost its session, and saying so is what lets the
+  // escalation path report a cause an operator can act on.
+  if (
+    clearedAuth &&
+    terminal.failureCode &&
+    AMBIGUOUS_FAILURES.has(terminal.failureCode) &&
+    (await looksLikeAuthPage(surface))
+  ) {
+    terminal.failureCode = 'session_expired';
+    terminal.failureMessage = `Session expired before "${terminal.failedAtStepId ?? 'extraction'}" could complete`;
   }
 
   const outcome = classify(terminal, capability.businessOutcomes ?? []);

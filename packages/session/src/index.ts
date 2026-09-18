@@ -1,6 +1,7 @@
 export { SessionRegistry } from './registry.js';
 export { raiseIntervention, shouldEscalate } from './intervention.js';
 export type { RaiseInterventionOptions } from './intervention.js';
+export { handOff, handBack, resolveIntervention } from './handoff.js';
 export type {
   Session,
   SessionState,
