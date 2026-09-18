@@ -1,9 +1,9 @@
 {
-  "name": "@understudy/replay",
+  "name": "@understudy/session",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Replay engine — deterministic executor that walks a capability artifact against a Surface.",
+  "description": "Session registry — control-token state machine, append-only ledger, and intervention raiser.",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -12,7 +12,9 @@
     "./package.json": "./package.json"
   },
   "types": "./dist/index.d.ts",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "sideEffects": false,
   "scripts": {
     "build": "tsup",
@@ -21,8 +23,6 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@understudy/schemas": "*",
-    "@understudy/session": "*",
-    "@understudy/surface": "*"
+    "@understudy/schemas": "*"
   }
 }

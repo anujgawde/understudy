@@ -8,17 +8,26 @@ import type {
   ValueType,
 } from '@understudy/schemas';
 import type { Surface } from '@understudy/surface';
+import type { Intervention, SessionRegistry } from '@understudy/session';
+import { raiseIntervention, shouldEscalate } from '@understudy/session';
 import { classify, type TerminalState } from './classifier.js';
+
+export interface SessionContext {
+  registry: SessionRegistry;
+  sessionId: string;
+}
 
 export interface ExecutorOptions {
   capability: Capability;
   surface: Surface;
   inputs: Record<string, string>;
   runId?: string;
+  session?: SessionContext;
 }
 
 export interface ExecutorResult {
   runLog: RunLog;
+  intervention?: Intervention;
 }
 
 function substituteInputs(value: string, inputs: Record<string, string>): string {
@@ -124,6 +133,7 @@ export async function execute(options: ExecutorOptions): Promise<ExecutorResult>
   let sequence = 0;
 
   const terminal: TerminalState = { completedAllSteps: true, outputs: {} };
+  let lastSuccessfulStepId: string | undefined;
 
   for (const step of capability.steps) {
     const action = resolveActionInputs(step.action, inputs);
@@ -183,6 +193,7 @@ export async function execute(options: ExecutorOptions): Promise<ExecutorResult>
       resolvedByIndex,
       succeeded: true,
     });
+    lastSuccessfulStepId = step.stepId;
 
     const stepCheckpoints = capability.checkpoints.filter(
       (checkpoint) => checkpoint.afterStepId === step.stepId,
@@ -261,6 +272,37 @@ export async function execute(options: ExecutorOptions): Promise<ExecutorResult>
 
   const outcome = classify(terminal, capability.businessOutcomes ?? []);
 
+  let intervention: Intervention | undefined;
+
+  if (
+    options.session &&
+    outcome.classification === 'failed' &&
+    shouldEscalate(outcome.failureCode)
+  ) {
+    intervention = raiseIntervention({
+      registry: options.session.registry,
+      sessionId: options.session.sessionId,
+      runId,
+      capabilityId: capability.capabilityId,
+      failureCode: outcome.failureCode,
+      failedAtStepId: terminal.failedAtStepId,
+      lastSuccessfulStepId,
+      message: outcome.message,
+      pageUrl: await surface.pageUrl().catch(() => undefined),
+    });
+
+    entries.push({
+      entryType: 'intervention',
+      sequence: sequence++,
+      occurredAt: new Date().toISOString(),
+      actor: 'system',
+      interventionId: intervention.interventionId,
+      state: 'raised',
+    });
+
+    outcome.interventionRaised = true;
+  }
+
   const runLog: RunLog = {
     runId,
     mode: 'replay',
@@ -272,5 +314,5 @@ export async function execute(options: ExecutorOptions): Promise<ExecutorResult>
     outcome,
   };
 
-  return { runLog };
+  return { runLog, intervention };
 }
