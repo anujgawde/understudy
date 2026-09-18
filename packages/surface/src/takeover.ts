@@ -11,7 +11,7 @@ export class OperatorTakeover {
   }
 
   async startScreencast(
-    onFrame: (frame: ScreencastFrame) => void,
+    onFrame: (frame: ScreencastFrame) => void | Promise<void>,
     options?: ScreencastOptions,
   ): Promise<void> {
     if (this.cdpSession) {
@@ -22,12 +22,19 @@ export class OperatorTakeover {
     this.cdpSession = cdpSession;
 
     cdpSession.on('Page.screencastFrame', (frame) => {
-      onFrame({ data: frame.data, capturedAt: new Date().toISOString() });
-      // Chrome withholds the next frame until this ack lands, so a dropped ack
-      // silently freezes the stream rather than erroring.
-      void cdpSession
-        .send('Page.screencastFrameAck', { sessionId: frame.sessionId })
-        .catch(() => undefined);
+      void (async () => {
+        // A consumer that throws must not stall the stream, but one that is
+        // merely slow should: awaiting it before the ack is what applies
+        // backpressure.
+        await Promise.resolve(onFrame({ data: frame.data, capturedAt: new Date().toISOString() }))
+          .catch(() => undefined);
+        // Chrome withholds the next frame until this ack lands, so acking only
+        // once the consumer has taken this one turns the stream pull-based: a
+        // slow operator connection drops frames instead of queueing them.
+        await cdpSession
+          .send('Page.screencastFrameAck', { sessionId: frame.sessionId })
+          .catch(() => undefined);
+      })();
     });
 
     await cdpSession.send('Page.startScreencast', {

@@ -67,7 +67,9 @@ describe('OperatorTakeover', () => {
     const takeover = new OperatorTakeover(page);
     const frames: ScreencastFrame[] = [];
 
-    await takeover.startScreencast((frame) => frames.push(frame));
+    await takeover.startScreencast((frame) => {
+      frames.push(frame);
+    });
     await page.mouse.move(10, 10);
     await waitForFrames(frames, 1);
     await takeover.stopScreencast();
@@ -85,7 +87,9 @@ describe('OperatorTakeover', () => {
     const takeover = new OperatorTakeover(page);
     const frames: ScreencastFrame[] = [];
 
-    await takeover.startScreencast((frame) => frames.push(frame));
+    await takeover.startScreencast((frame) => {
+      frames.push(frame);
+    });
 
     // CDP only emits a frame when the page actually repaints, so the stream has
     // to be driven by visible change rather than by cursor movement alone.
