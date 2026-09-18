@@ -1,15 +1,4 @@
-export interface RawObservedElement {
-  elementRef: string;
-  role: string;
-  accessibleName: string | undefined;
-  currentValue: string | undefined;
-  isEnabled: boolean;
-  isVisible: boolean;
-  tagName: string | undefined;
-  domId: string | undefined;
-  testId: string | undefined;
-  nearbyText: string[] | undefined;
-}
+import type { RawObservedElement } from './types.js';
 
 /**
  * Runs inside the browser via page.evaluate(). Must be entirely

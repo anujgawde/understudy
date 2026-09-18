@@ -1,11 +1,6 @@
 import type { CDPSession, Page } from 'playwright';
 import type { OperatorInput, ScreencastFrame } from '@understudy/schemas';
-
-export interface ScreencastOptions {
-  maxWidth?: number;
-  maxHeight?: number;
-  quality?: number;
-}
+import type { ScreencastOptions } from './types.js';
 
 export class OperatorTakeover {
   private page: Page;

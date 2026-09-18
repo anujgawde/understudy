@@ -15,7 +15,12 @@ import type {
 import type { Surface } from '@understudy/surface';
 import { buildSystemPrompt } from './prompt.js';
 import { discoveryTools } from './tools.js';
-import type { DiscoveryOptions, DiscoveryResult, FinishPayload } from './types.js';
+import type {
+  DiscoveryOptions,
+  DiscoveryResult,
+  FinishPayload,
+  ToolCallResult,
+} from './types.js';
 
 function classifyAction(action: Action): ActionClass {
   switch (action.actionType) {
@@ -233,12 +238,6 @@ export async function discover(options: DiscoveryOptions): Promise<DiscoveryResu
   };
 
   return { runLog };
-}
-
-interface ToolCallResult {
-  toolResult: ToolResult;
-  nextSequence: number;
-  finishPayload: FinishPayload | null;
 }
 
 async function executeToolCall(

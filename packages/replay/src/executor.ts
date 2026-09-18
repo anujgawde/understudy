@@ -8,31 +8,15 @@ import type {
   ValueType,
 } from '@understudy/schemas';
 import type { Surface } from '@understudy/surface';
-import type { Intervention, SessionRegistry } from '@understudy/session';
+import type { Intervention } from '@understudy/session';
 import { raiseIntervention, shouldEscalate } from '@understudy/session';
-import { classify, type TerminalState } from './classifier.js';
-
-export interface SessionContext {
-  registry: SessionRegistry;
-  sessionId: string;
-}
-
-export interface ExecutorOptions {
-  capability: Capability;
-  surface: Surface;
-  inputs: Record<string, string>;
-  runId?: string;
-  session?: SessionContext;
-  // Set when an operator has handed the session back. The step named here is
-  // re-entered, but only once the gate below confirms the page still satisfies
-  // what the previous step established.
-  resumeAtStepId?: string;
-}
-
-export interface ExecutorResult {
-  runLog: RunLog;
-  intervention?: Intervention;
-}
+import { classify } from './classifier.js';
+import type {
+  ExecutorOptions,
+  ExecutorResult,
+  ReassertResult,
+  TerminalState,
+} from './types.js';
 
 const AUTH_URL_PATTERN = /(^|[/.])(login|log-in|signin|sign-in|auth|sso|session)([/?#]|$)/i;
 
@@ -147,10 +131,6 @@ async function evaluateCheckpoint(
   }
   return { passed: true };
 }
-
-export type ReassertResult =
-  | { held: true }
-  | { held: false; reason: string; checkpointId?: string };
 
 // An operator who took the session over may have navigated anywhere. Before the
 // run is allowed to replay into the page they left behind, the checkpoints that

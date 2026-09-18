@@ -1,5 +1,8 @@
-export type { ResolveResult, Surface } from './surface.js';
+export type {
+  PlaywrightSurfaceOptions,
+  ResolveResult,
+  ScreencastOptions,
+  Surface,
+} from './types.js';
 export { PlaywrightSurface } from './playwright-surface.js';
-export type { PlaywrightSurfaceOptions } from './playwright-surface.js';
 export { OperatorTakeover } from './takeover.js';
-export type { ScreencastOptions } from './takeover.js';

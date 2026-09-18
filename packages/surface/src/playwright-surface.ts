@@ -9,12 +9,8 @@ import type {
   ObservedElement,
   WaitCondition,
 } from '@understudy/schemas';
-import type { ResolveResult, Surface } from './surface.js';
+import type { PlaywrightSurfaceOptions, ResolveResult, Surface } from './types.js';
 import { collectPageElements } from './enrichment.js';
-
-export interface PlaywrightSurfaceOptions {
-  screenshotDirectory?: string;
-}
 
 export class PlaywrightSurface implements Surface {
   private page: Page;

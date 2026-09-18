@@ -14,3 +14,26 @@ export interface Surface {
   pageUrl(): Promise<string>;
   hasText(text: string): Promise<boolean>;
 }
+
+export interface RawObservedElement {
+  elementRef: string;
+  role: string;
+  accessibleName: string | undefined;
+  currentValue: string | undefined;
+  isEnabled: boolean;
+  isVisible: boolean;
+  tagName: string | undefined;
+  domId: string | undefined;
+  testId: string | undefined;
+  nearbyText: string[] | undefined;
+}
+
+export interface PlaywrightSurfaceOptions {
+  screenshotDirectory?: string;
+}
+
+export interface ScreencastOptions {
+  maxWidth?: number;
+  maxHeight?: number;
+  quality?: number;
+}

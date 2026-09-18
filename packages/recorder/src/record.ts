@@ -9,12 +9,7 @@ import type {
 import { isSensitiveField } from '@understudy/redaction';
 import { distillTrace } from './distill.js';
 import { deriveLadder, labelFor } from './ladder.js';
-import type { RecordingOptions } from './types.js';
-
-interface ExtractedValue {
-  rawValue: string;
-  observation: Observation;
-}
+import type { ExtractedValue, RecordingOptions } from './types.js';
 
 function elementIn(observation: Observation, elementRef: string): ObservedElement | undefined {
   return observation.elements.find((element) => element.elementRef === elementRef);

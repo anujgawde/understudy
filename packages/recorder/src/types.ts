@@ -1,5 +1,10 @@
 import type { Action, Observation, Policy } from '@understudy/schemas';
 
+export interface ExtractedValue {
+  rawValue: string;
+  observation: Observation;
+}
+
 export interface RecordingOptions {
   capabilityId: string;
   name: string;

@@ -1,17 +1,13 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type {
+  AnthropicProviderOptions,
   ConversationMessage,
   ModelProvider,
   ModelTurn,
   ToolCall,
   ToolDefinition,
   ToolResult,
-} from './model-provider.js';
-
-export interface AnthropicProviderOptions {
-  modelId?: string;
-  maxTokens?: number;
-}
+} from './types.js';
 
 export class AnthropicProvider implements ModelProvider {
   readonly modelId: string;

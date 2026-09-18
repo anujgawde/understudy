@@ -38,3 +38,13 @@ export interface ModelProvider {
     tools: ToolDefinition[];
   }): Promise<ModelTurn>;
 }
+
+export interface AnthropicProviderOptions {
+  modelId?: string;
+  maxTokens?: number;
+}
+
+export interface GeminiProviderOptions {
+  modelId?: string;
+  apiKey?: string;
+}

@@ -1,17 +1,13 @@
 import { GoogleGenAI, type Content, type FunctionDeclaration, type Part } from '@google/genai';
 import type {
   ConversationMessage,
+  GeminiProviderOptions,
   ModelProvider,
   ModelTurn,
   ToolCall,
   ToolDefinition,
   ToolResult,
-} from './model-provider.js';
-
-export interface GeminiProviderOptions {
-  modelId?: string;
-  apiKey?: string;
-}
+} from './types.js';
 
 export class GeminiProvider implements ModelProvider {
   readonly modelId: string;

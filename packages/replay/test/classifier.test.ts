@@ -1,6 +1,7 @@
 import { describe, test, expect } from 'vitest';
 import type { BusinessOutcomeRule } from '@understudy/schemas';
-import { classify, type TerminalState } from '../src/classifier.js';
+import { classify } from '../src/classifier.js';
+import type { TerminalState } from '../src/types.js';
 
 describe('Outcome classifier', () => {
   test('all steps completed with outputs → success', () => {

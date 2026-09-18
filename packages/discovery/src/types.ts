@@ -1,4 +1,4 @@
-import type { ModelProvider } from '@understudy/model-provider';
+import type { ModelProvider, ToolResult } from '@understudy/model-provider';
 import type { Action, ActionClass, Policy, RunLog, RunLogEntry } from '@understudy/schemas';
 import type { Surface } from '@understudy/surface';
 
@@ -28,4 +28,10 @@ export interface FinishPayload {
   outputs?: Record<string, string>;
   businessOutcomeCode?: string;
   summary: string;
+}
+
+export interface ToolCallResult {
+  toolResult: ToolResult;
+  nextSequence: number;
+  finishPayload: FinishPayload | null;
 }

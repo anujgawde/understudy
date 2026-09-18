@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { Actor, type FailureCode } from '@understudy/schemas';
+import type { SessionRegistry } from './registry.js';
 
 export const SessionState = z.enum(['idle', 'running', 'paused', 'handed_off']);
 export type SessionState = z.infer<typeof SessionState>;
@@ -60,6 +61,18 @@ export interface Session {
   capabilityId: string | undefined;
   ledger: LedgerEntry[];
   interventions: Intervention[];
+}
+
+export interface RaiseInterventionOptions {
+  registry: SessionRegistry;
+  sessionId: string;
+  runId: string;
+  capabilityId?: string;
+  failureCode: FailureCode;
+  failedAtStepId?: string;
+  lastSuccessfulStepId?: string;
+  message: string;
+  pageUrl?: string;
 }
 
 export const ESCALATION_WORTHY_FAILURES: ReadonlySet<FailureCode> = new Set([

@@ -1,13 +1,5 @@
-import type { BusinessOutcomeRule, FailureCode, Outcome } from '@understudy/schemas';
-
-export interface TerminalState {
-  completedAllSteps: boolean;
-  failedAtStepId?: string;
-  failureCode?: FailureCode;
-  failureMessage?: string;
-  failedCheckpointId?: string;
-  outputs: Record<string, unknown>;
-}
+import type { BusinessOutcomeRule, Outcome } from '@understudy/schemas';
+import type { TerminalState } from './types.js';
 
 function matchesRule(rule: BusinessOutcomeRule, state: TerminalState): boolean {
   switch (rule.condition.when) {

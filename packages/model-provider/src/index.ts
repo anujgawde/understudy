@@ -1,14 +1,13 @@
 export type {
+  AnthropicProviderOptions,
   ConversationMessage,
+  GeminiProviderOptions,
   ModelProvider,
   ModelTurn,
   ToolCall,
   ToolDefinition,
   ToolResult,
-} from './model-provider.js';
+} from './types.js';
 
 export { AnthropicProvider } from './anthropic.js';
-export type { AnthropicProviderOptions } from './anthropic.js';
-
 export { GeminiProvider } from './gemini.js';
-export type { GeminiProviderOptions } from './gemini.js';

@@ -1,18 +1,10 @@
 import type { FailureCode } from '@understudy/schemas';
-import type { SessionRegistry } from './registry.js';
-import { ESCALATION_WORTHY_FAILURES, type Intervention, type InterventionSeverity } from './types.js';
-
-export interface RaiseInterventionOptions {
-  registry: SessionRegistry;
-  sessionId: string;
-  runId: string;
-  capabilityId?: string;
-  failureCode: FailureCode;
-  failedAtStepId?: string;
-  lastSuccessfulStepId?: string;
-  message: string;
-  pageUrl?: string;
-}
+import {
+  ESCALATION_WORTHY_FAILURES,
+  type Intervention,
+  type InterventionSeverity,
+  type RaiseInterventionOptions,
+} from './types.js';
 
 function severityFor(failureCode: FailureCode): InterventionSeverity {
   if (failureCode === 'session_expired' || failureCode === 'timeout') return 'critical';
