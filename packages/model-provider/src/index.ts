@@ -4,6 +4,7 @@ export type {
   GeminiProviderOptions,
   ModelProvider,
   ModelTurn,
+  OllamaProviderOptions,
   ToolCall,
   ToolDefinition,
   ToolResult,
@@ -11,3 +12,4 @@ export type {
 
 export { AnthropicProvider } from './anthropic.js';
 export { GeminiProvider } from './gemini.js';
+export { OllamaProvider } from './ollama.js';
