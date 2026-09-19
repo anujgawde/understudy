@@ -15,7 +15,7 @@ function parseCliArguments() {
   const { values, positionals } = parseArgs({
     allowPositionals: true,
     options: {
-      url: { type: 'string', short: 'u', default: 'http://localhost:4100' },
+      url: { type: 'string', short: 'u', default: 'http://localhost:4000' },
       headed: { type: 'boolean', default: false },
       output: { type: 'string', short: 'o', default: 'evidence' },
       provider: { type: 'string', short: 'p', default: 'gemini' },
@@ -41,7 +41,7 @@ function parseCliArguments() {
   return {
     goal,
     provider: provider as 'gemini' | 'anthropic',
-    startUrl: values.url ?? 'http://localhost:4100',
+    startUrl: values.url ?? 'http://localhost:4000',
     headed: values.headed ?? false,
     outputDirectory: values.output ?? 'evidence',
     modelId: values.model,
