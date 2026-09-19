@@ -14,12 +14,12 @@ const navGroups = [
     label: 'Operate',
     items: [
       { key: 'replays', name: 'Replay history', href: '/replays' },
-      { key: 'interventions', name: 'Interventions', badge: { count: 2, hue: 'amber' as const } },
+      { key: 'interventions', name: 'Interventions', href: '/interventions', badge: { count: 2, hue: 'amber' as const } },
     ],
   },
   {
     label: 'Govern',
-    items: [{ key: 'policy', name: 'Policy profiles' }],
+    items: [{ key: 'policy', name: 'Policy profiles', href: '/policy' }],
   },
 ];
 
@@ -31,9 +31,11 @@ const badgeGrounds = {
 function NavItem({
   item,
   active,
+  operatorControl,
 }: {
   item: { key: string; name: string; href?: string; tally?: string; badge?: { count: number; hue: 'blue' | 'amber' } };
   active: boolean;
+  operatorControl: boolean;
 }) {
   const body = (
     <>
@@ -49,10 +51,12 @@ function NavItem({
     </>
   );
 
+  const activeGround =
+    operatorControl && active
+      ? 'bg-operator-control-ground text-operator-control-text font-semibold'
+      : 'bg-ink text-button-primary-text font-semibold';
   const className = `flex items-center justify-between gap-2 px-[9px] py-[7px] text-[13px] ${
-    active
-      ? 'bg-ink text-button-primary-text font-semibold'
-      : 'text-ink-body hover:bg-rail-hover'
+    active ? activeGround : 'text-ink-body hover:bg-rail-hover'
   }`;
 
   return item.href ? (
@@ -64,7 +68,15 @@ function NavItem({
   );
 }
 
-export function AppShell({ active, children }: { active: string; children: ReactNode }) {
+export function AppShell({
+  active,
+  operatorControl = false,
+  children,
+}: {
+  active: string;
+  operatorControl?: boolean;
+  children: ReactNode;
+}) {
   return (
     <div className="flex min-h-screen">
       <nav className="w-[200px] flex-none bg-rail border-r border-line flex flex-col">
@@ -85,7 +97,12 @@ export function AppShell({ active, children }: { active: string; children: React
                 {group.label}
               </div>
               {group.items.map((item) => (
-                <NavItem key={item.key} item={item} active={item.key === active} />
+                <NavItem
+                  key={item.key}
+                  item={item}
+                  active={item.key === active}
+                  operatorControl={operatorControl}
+                />
               ))}
             </div>
           ))}
@@ -96,12 +113,27 @@ export function AppShell({ active, children }: { active: string; children: React
             Acting as
           </div>
           <div className="flex border border-line bg-panel">
-            <div className="flex-1 text-center py-[5px] text-[11px] bg-ink text-button-primary-text font-semibold">
+            <div
+              className={`flex-1 text-center py-[5px] text-[11px] ${
+                operatorControl ? 'text-ink-body' : 'bg-ink text-button-primary-text font-semibold'
+              }`}
+            >
               Engineer
             </div>
-            <div className="flex-1 text-center py-[5px] text-[11px] border-l border-line text-ink-body">
+            <div
+              className={`flex-1 text-center py-[5px] text-[11px] border-l border-line ${
+                operatorControl
+                  ? 'bg-operator-control-ground text-operator-control-text font-semibold'
+                  : 'text-ink-body'
+              }`}
+            >
               Operator
             </div>
+          </div>
+          <div
+            className={`text-[11px] ${operatorControl ? 'text-amber-deep font-medium' : 'text-ink-mute'}`}
+          >
+            m.alvarez · {operatorControl ? 'holding control' : 'approve disabled'}
           </div>
         </div>
       </nav>

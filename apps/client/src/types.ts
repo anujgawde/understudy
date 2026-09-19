@@ -179,6 +179,83 @@ export interface ShapingSession {
   values: ObservedValue[];
 }
 
+export type Actor = 'system' | 'model' | 'operator';
+
+export type SessionState = 'idle' | 'running' | 'paused' | 'handed_off';
+
+export interface LedgerEntry {
+  entryId: string;
+  occurredAt: string;
+  actor: Actor | 'paused';
+  summary: string;
+}
+
+// Why the run stopped. Each trigger carries different context, so each renders
+// a different row emphasis in the inbox.
+export type InterventionTrigger = 'undeclared_state' | 'policy_denied' | 'risky_step';
+
+export interface Intervention {
+  interventionId: string;
+  sessionId: string;
+  raisedAt: string;
+  severity: 'warning' | 'critical';
+  state: 'raised' | 'acknowledged' | 'resolved';
+  trigger: InterventionTrigger;
+  failureCode: string;
+  headline: string;
+  message: string;
+  badges: string[];
+  context: {
+    runId: string;
+    capabilityId: string;
+    capabilityVersion: number;
+    stepNumber: number;
+    totalSteps: number;
+    tenant: string;
+    pageUrl: string;
+    lastSuccessfulStepId: string;
+  };
+  // The clock is bounded by the target app's own session lifetime, not by our
+  // preference — holding a session open for a human who isn't coming has no value.
+  sessionSecondsLeft: number;
+  sessionSecondsTotal: number;
+  actionLabel: string;
+}
+
+export interface TakeoverSession {
+  sessionId: string;
+  interventionId: string;
+  state: SessionState;
+  controlHeldBy: Actor;
+  operatorName: string;
+  browser: string;
+  viewport: string;
+  transport: string;
+  claimedSecondsAgo?: number;
+  headline: string;
+  detail: string;
+  ledger: LedgerEntry[];
+  constraints: Array<{ decision: 'allow' | 'deny'; text: string }>;
+}
+
+export interface PolicyProfile {
+  policyId: string;
+  revision: number;
+  description: string;
+  allowedOrigins: string[];
+  deniedRoutes: string[];
+  rules: Array<{ actionClass: string; note: string; decision: 'safe' | 'confirm' | 'blocked' }>;
+  redactedFieldNames: string[];
+  screenshotPolicy: string;
+  artifactScrubbing: string;
+  evidenceRetention: string;
+  riskyActionHandling: string;
+  autoAcceptThreshold: number;
+  escalateOn: string[];
+  interventionSla: string;
+  maxStepsPerRun: number;
+}
+
 export interface RunLog {
   runId: string;
   mode: 'discovery' | 'replay';

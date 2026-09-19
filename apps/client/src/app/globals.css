@@ -41,6 +41,8 @@
   --color-agent-control-text: oklch(0.97 0.01 250);
   --color-operator-control-ground: oklch(0.42 0.13 70);
   --color-operator-control-text: oklch(0.99 0.01 70);
+  --color-agent-dot: oklch(0.75 0.14 250);
+  --color-operator-dot: oklch(0.9 0.12 70);
 
   /* ── Darkened hue tints — banner eyebrows, verdict prose, metadata ── */
   --color-blue-deep: oklch(0.4 0.11 250);
