@@ -75,7 +75,11 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  const browser = await chromium.launch({ headless: !args.headed });
+  // Paced only when headed: a local replay otherwise finishes faster than a person can follow.
+  const browser = await chromium.launch({
+    headless: !args.headed,
+    slowMo: args.headed ? 500 : 0,
+  });
   const page = await browser.newPage();
   const surface = new PlaywrightSurface(page);
 
