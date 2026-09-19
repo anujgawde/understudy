@@ -14,46 +14,138 @@ export const capabilities: Capability[] = [
         required: true,
         description: 'Institution-issued member number. Validated before the browser is opened.',
       },
+      {
+        name: 'portalPassword',
+        valueType: 'string',
+        required: true,
+        secret: true,
+        description: 'Service-account credential, supplied per call and never written to the artifact.',
+      },
     ],
     outputs: [
-      { name: 'savingsBalance', valueType: 'number', required: true },
-      { name: 'shareAccountNumber', valueType: 'string', required: true },
-      { name: 'asOf', valueType: 'date', required: true },
+      {
+        name: 'savingsBalance',
+        valueType: 'number',
+        required: true,
+        description:
+          'Parsed from the share-summary grid; currency symbol and separators stripped at extract time, not by the caller.',
+      },
+      {
+        name: 'shareAccountNumber',
+        valueType: 'string',
+        required: true,
+        secret: true,
+        description:
+          'Returned as last-4 only. The full value exists in the DOM and is discarded at the extractor boundary.',
+      },
+      {
+        name: 'asOf',
+        valueType: 'date',
+        required: false,
+        description:
+          "The app's own staleness stamp. Included because a balance without an as-of time is not an answer.",
+      },
     ],
     steps: [
       {
         stepId: 'navigate-to-login',
         action: { actionType: 'navigate', url: 'http://127.0.0.1:4000/login' },
         waitFor: { waitUntil: 'pageLoad' },
+        description: 'Open the servicing portal',
+      },
+      {
+        stepId: 'fill-password',
+        action: {
+          actionType: 'fill',
+          target: [
+            { strategy: 'role', role: 'textbox', accessibleName: 'Password' },
+            { strategy: 'adjacent', labelText: 'Password', direction: 'next' },
+          ],
+          value: '{{portalPassword}}',
+        },
+        description: 'Password field ← portalPassword',
+      },
+      {
+        stepId: 'click-sign-in',
+        action: {
+          actionType: 'click',
+          target: [{ strategy: 'role', role: 'button', accessibleName: 'Sign In' }],
+        },
+        waitFor: { waitUntil: 'pageLoad' },
+        description: 'Sign in',
       },
       {
         stepId: 'fill-member-number',
         action: {
           actionType: 'fill',
-          target: [{ strategy: 'role', role: 'textbox', accessibleName: 'Member Number' }],
+          target: [
+            { strategy: 'role', role: 'textbox', accessibleName: 'Member Number' },
+            { strategy: 'adjacent', labelText: 'Member No', direction: 'next', targetRole: 'textbox' },
+            { strategy: 'css', selector: '#ctl00_ContentMain_txtMbrNo' },
+          ],
           value: '{{memberNumber}}',
         },
+        waitFor: { waitUntil: 'selectorPresent', selector: '#ctl00_ContentMain_txtMbrNo' },
+        description: 'Member number field ← memberNumber',
       },
       {
         stepId: 'click-search',
         action: {
           actionType: 'click',
-          target: [{ strategy: 'role', role: 'button', accessibleName: 'Search' }],
+          target: [
+            { strategy: 'role', role: 'button', accessibleName: 'Search' },
+            { strategy: 'css', selector: '#ctl00_ContentMain_btnSearch' },
+          ],
         },
         waitFor: { waitUntil: 'pageLoad' },
+        description: 'Search button',
+      },
+      {
+        stepId: 'click-member-row',
+        action: {
+          actionType: 'click',
+          target: [
+            { strategy: 'role', role: 'link', accessibleName: 'JOHNSON, MARGARET A' },
+            { strategy: 'css', selector: '#ctl00_ContentMain_grdResults tbody tr:first-child a' },
+          ],
+        },
+        waitFor: { waitUntil: 'textPresent', text: 'SHARE SUMMARY' },
+        description: 'Result row 1',
       },
     ],
     checkpoints: [
       {
         checkpointId: 'on-detail-page',
-        afterStepId: 'click-search',
+        afterStepId: 'click-member-row',
         allOf: [
           { assert: 'text_present', text: 'SHARE SUMMARY' },
           { assert: 'url_matches', pattern: '/members/detail' },
+          { assert: 'text_absent', text: 'No records matched' },
         ],
       },
     ],
-    extractions: [],
+    extractions: [
+      {
+        outputName: 'savingsBalance',
+        target: [
+          { strategy: 'adjacent', labelText: 'Current Balance', direction: 'below' },
+          { strategy: 'css', selector: '#ctl00_ContentMain_grdShares tbody tr:first-child td:nth-child(3)' },
+        ],
+        valueType: 'number',
+      },
+      {
+        outputName: 'shareAccountNumber',
+        target: [
+          { strategy: 'css', selector: '#ctl00_ContentMain_grdShares tbody tr:first-child td:nth-child(2)' },
+        ],
+        valueType: 'string',
+      },
+      {
+        outputName: 'asOf',
+        target: [{ strategy: 'adjacent', labelText: 'As of', direction: 'next' }],
+        valueType: 'date',
+      },
+    ],
     businessOutcomes: [
       {
         code: 'member_not_found',

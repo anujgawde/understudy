@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { AppShell } from '@/components/app-shell';
 import { Badge } from '@/components/badge';
 import { MicroBadge } from '@/components/micro-badge';
@@ -28,7 +29,10 @@ function CatalogRow({ capability }: { capability: Capability }) {
   const stability = stabilityOf(capability.capabilityId);
 
   return (
-    <div className={`${gridColumns} items-center px-[15px] py-[13px] bg-panel border-b border-line-soft`}>
+    <Link
+      href={`/capabilities/${capability.capabilityId}`}
+      className={`${gridColumns} items-center px-[15px] py-[13px] bg-panel border-b border-line-soft hover:bg-panel-head transition-colors`}
+    >
       <div className="min-w-0 flex flex-col gap-1">
         <div className="flex items-center gap-[7px] flex-wrap">
           <span className="font-mono text-[12.5px] font-medium text-ink">{capability.name}</span>
@@ -51,7 +55,7 @@ function CatalogRow({ capability }: { capability: Capability }) {
           {capability.status}
         </Badge>
       </div>
-    </div>
+    </Link>
   );
 }
 
