@@ -1,4 +1,4 @@
-import { HTMLAttributes } from 'react';
+import { type HTMLAttributes } from 'react';
 
 export type BadgeHue = 'neutral' | 'blue' | 'green' | 'amber' | 'red' | 'violet';
 

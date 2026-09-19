@@ -1,4 +1,4 @@
-import { ButtonHTMLAttributes } from 'react';
+import { type ButtonHTMLAttributes } from 'react';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'approve' | 'destructive';
 

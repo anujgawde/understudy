@@ -1,4 +1,4 @@
-import { HTMLAttributes } from 'react';
+import { type HTMLAttributes } from 'react';
 
 export type MicroBadgeHue = 'neutral' | 'blue' | 'green' | 'amber' | 'red' | 'violet';
 
