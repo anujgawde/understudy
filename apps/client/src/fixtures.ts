@@ -1,4 +1,9 @@
-import type { Capability, RunLog } from '@/types';
+import type {
+  Capability,
+  DiscoveryRun,
+  RunLog,
+  ShapingSession,
+} from '@/types';
 
 export const capabilities: Capability[] = [
   {
@@ -524,3 +529,116 @@ export const runs: RunLog[] = [
     },
   },
 ];
+
+export const discoveryRun: DiscoveryRun = {
+  runId: 'run_8c31d',
+  goal: 'Look up member 12345 and read their current savings balance',
+  target: 'meridian-core',
+  tenant: 'riverbend-cu',
+  policyId: 'servicing-readonly',
+  perception: 'a11y tree + screenshot',
+  state: 'running',
+  stepsTaken: 7,
+  maxSteps: 25,
+  tokensUsed: 41200,
+  stopConditions: [
+    { name: 'max_steps', value: '25' },
+    { name: 'wall_clock', value: '180s' },
+    { name: 'token_budget', value: '120k' },
+    { name: 'no_progress', value: '3 steps' },
+    { name: 'on_policy_deny', value: 'escalate', escalates: true },
+  ],
+  steps: [
+    {
+      sequence: 5,
+      actionClass: 'fill',
+      observe:
+        'Frameset with 3 frames. Content frame holds a table-based form; the a11y tree exposes one textbox named "Member Number" and a button named "Search".',
+      decide:
+        'The goal supplies a member number, so fill the one identifying field rather than exploring the menu tree. Recording the target by a11y name, not the generated id.',
+      act: 'fill(role=textbox name="Member Number", "<redacted>")',
+      policy: { decision: 'allow', reason: 'fill on allowlisted route, value redaction applied' },
+      tokens: 1842,
+      durationMs: 2100,
+    },
+    {
+      sequence: 6,
+      actionClass: 'click',
+      observe:
+        'Field now contains the member number. Two submit-like controls are present: "Search" and "Advanced Query".',
+      decide:
+        '"Search" is the narrower, reversible action. Avoiding "Advanced Query" because it opens a modal whose state I would have to model.',
+      act: 'click(role=button name="Search")',
+      policy: { decision: 'allow', reason: 'classified safe/reversible' },
+      tokens: 1610,
+      durationMs: 1800,
+    },
+    {
+      sequence: 7,
+      actionClass: 'extract',
+      observe:
+        'Share Summary grid rendered. Row 1 is type S-01 with a currency-formatted amount; a timestamp sits in the grid caption.',
+      decide:
+        'Goal is satisfied by reading, not acting. Capturing the as-of stamp too — a balance without a time is not an answer.',
+      act: 'extract(savingsBalance, asOf) → checkpoint',
+      inFlight: true,
+    },
+  ],
+};
+
+export const shapingSession: ShapingSession = {
+  runId: 'run_8c31d',
+  capabilityName: 'read_member_savings_balance',
+  autoAcceptThreshold: 0.85,
+  thresholdSource: 'from policy profile',
+  values: [
+    {
+      valueId: 'share-type',
+      contractName: 'shareType',
+      contractType: 'string',
+      value: '"Savings — Regular (S-01)"',
+      source: 'selected in share-type dropdown, step 5',
+      proposedRole: 'constant',
+      confidence: 0.61,
+      uncertaintyReason:
+        'The dropdown had 14 options and the goal text did not name one, so this may be a caller choice rather than a fixed business rule.',
+      alternatives: ['input', 'constant', 'discard'],
+    },
+    {
+      valueId: 'member-number',
+      contractName: 'memberNumber',
+      contractType: 'string',
+      value: '"12345"',
+      source: 'typed into member search, step 5',
+      proposedRole: 'input',
+      confidence: 0.98,
+    },
+    {
+      valueId: 'savings-balance',
+      contractName: 'savingsBalance',
+      contractType: 'money<USD>',
+      value: '"$4,182.90"',
+      source: 'read from share grid row 1, step 7',
+      proposedRole: 'output',
+      confidence: 0.95,
+    },
+    {
+      valueId: 'as-of',
+      contractName: 'asOf',
+      contractType: 'datetime',
+      value: '"09/12/2026 14:22"',
+      source: 'grid caption timestamp, step 7',
+      proposedRole: 'output',
+      confidence: 0.91,
+    },
+    {
+      valueId: 'entry-route',
+      contractName: 'entryRoute',
+      contractType: 'string',
+      value: '"/servicing/default.aspx"',
+      source: 'first navigation, step 1',
+      proposedRole: 'constant',
+      confidence: 0.89,
+    },
+  ],
+};

@@ -124,6 +124,61 @@ export interface TimelineStep {
   resolvedByIndex?: number;
 }
 
+// One turn of the discovery loop, grouping the run log's observation /
+// rationale / action / policy_decision entries for a single step into the card
+// the trace screen draws.
+export interface DiscoveryStep {
+  sequence: number;
+  actionClass: 'navigate' | 'fill' | 'click' | 'assert' | 'extract' | 'submit';
+  observe: string;
+  decide: string;
+  act: string;
+  policy?: { decision: 'allow' | 'confirm' | 'deny'; reason: string };
+  tokens?: number;
+  durationMs?: number;
+  inFlight?: boolean;
+}
+
+export interface DiscoveryRun {
+  runId: string;
+  goal: string;
+  target: string;
+  tenant: string;
+  policyId: string;
+  perception: string;
+  state: 'running' | 'completed' | 'abandoned';
+  stepsTaken: number;
+  maxSteps: number;
+  tokensUsed: number;
+  stopConditions: Array<{ name: string; value: string; escalates?: boolean }>;
+  steps: DiscoveryStep[];
+}
+
+// A concrete value the run touched, with the role the recorder proposes for it.
+// Confidence is a shaping-time signal only — it is deliberately not part of the
+// capability schema, since a replayed artifact must not depend on it.
+export interface ObservedValue {
+  valueId: string;
+  value: string;
+  source: string;
+  proposedRole: 'input' | 'output' | 'constant';
+  // What this value is called in the contract once shaped, and the type it
+  // carries there — so the preview is derived rather than positional.
+  contractName: string;
+  contractType: string;
+  confidence: number;
+  uncertaintyReason?: string;
+  alternatives?: Array<'input' | 'output' | 'constant' | 'discard'>;
+}
+
+export interface ShapingSession {
+  runId: string;
+  capabilityName: string;
+  autoAcceptThreshold: number;
+  thresholdSource: string;
+  values: ObservedValue[];
+}
+
 export interface RunLog {
   runId: string;
   mode: 'discovery' | 'replay';

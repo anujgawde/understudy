@@ -6,8 +6,8 @@ const navGroups = [
     label: 'Author',
     items: [
       { key: 'capabilities', name: 'Capabilities', href: '/capabilities', tally: '4' },
-      { key: 'discovery', name: 'Discovery runs' },
-      { key: 'shaping', name: 'Shaping queue', badge: { count: 1, hue: 'blue' as const } },
+      { key: 'discovery', name: 'Discovery runs', href: '/discovery' },
+      { key: 'shaping', name: 'Shaping queue', href: '/shaping', badge: { count: 1, hue: 'blue' as const } },
     ],
   },
   {
