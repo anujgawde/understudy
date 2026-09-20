@@ -72,27 +72,3 @@ export interface OllamaChatResponse {
   prompt_eval_count?: number;
   eval_count?: number;
 }
-
-export interface OllamaProviderOptions {
-  modelId?: string;
-  baseUrl?: string;
-  contextWindow?: number;
-}
-
-export interface OllamaToolCall {
-  function: { name: string; arguments: Record<string, unknown> };
-}
-
-export interface OllamaMessage {
-  role: 'system' | 'user' | 'assistant' | 'tool';
-  content: string;
-  tool_name?: string;
-  tool_calls?: OllamaToolCall[];
-}
-
-export interface OllamaChatResponse {
-  message?: { content?: string; tool_calls?: OllamaToolCall[] };
-  done_reason?: string;
-  prompt_eval_count?: number;
-  eval_count?: number;
-}
