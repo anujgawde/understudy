@@ -7,7 +7,7 @@ import { AnthropicProvider, GeminiProvider, OllamaProvider } from '@understudy/m
 import type { Policy, RunLogEntry } from '@understudy/schemas';
 import { PlaywrightSurface } from '@understudy/surface';
 import { discover } from '@understudy/discovery';
-import { recordCapability } from '@understudy/recorder';
+import { recordCapability, shapeBusinessOutcomes } from '@understudy/recorder';
 import { redactCapability, redactRunLog, redactText } from '@understudy/redaction';
 import { defaultPolicy } from './policy.js';
 
@@ -51,14 +51,32 @@ function parseCliArguments() {
   };
 }
 
-function capabilityIdFrom(goal: string): string {
-  const slug = goal
-    .toLowerCase()
+/**
+ * A capability is a task shape, not the instance it was discovered with. The id
+ * is the key the artifact library is looked up by, so "look up member 12345 and
+ * read the balance" and the same goal naming 67890 have to land on one id — the
+ * steps are already parameterised, and an id that is not would split one
+ * capability into a new file per member.
+ *
+ * The goal text itself is kept verbatim on the artifact. It is the record of
+ * what was actually asked, and a real example alongside the declared inputs is
+ * useful context when matching a later request against this capability.
+ */
+function capabilityIdFrom(goal: string, inputs: Record<string, string>): string {
+  let shape = goal.toLowerCase();
+
+  // Anything the run was handed is a parameter by definition. Single characters
+  // are skipped because they match by coincidence rather than reference.
+  for (const value of Object.values(inputs)) {
+    if (value.length > 2) shape = shape.replaceAll(value.toLowerCase(), ' ');
+  }
+
+  const slug = shape
+    // Member, account and reference numbers, which reach discovery through the
+    // goal prose rather than through --input.
+    .replace(/\d{3,}/g, ' ')
     .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')
-    .split('-')
-    .slice(0, 6)
-    .join('-');
+    .replace(/^-|-$/g, '');
 
   return slug || 'discovered-capability';
 }
@@ -101,8 +119,16 @@ async function main(): Promise<void> {
   const browser = await chromium.launch({ headless: !args.headed });
   const page = await browser.newPage();
 
-  const screenshotDirectory = join(args.outputDirectory, 'screenshots');
-  const surface = new PlaywrightSurface(page, { screenshotDirectory });
+  // The id depends only on the goal, so the evidence folder can be opened before
+  // the run starts. A discovery that fails then still leaves its log and frames
+  // somewhere findable instead of in a flat pile named by uuid.
+  const capabilityId = capabilityIdFrom(args.goal, {});
+  const capabilityDirectory = join(args.outputDirectory, capabilityId);
+  const discoveryDirectory = join(capabilityDirectory, 'discovery');
+
+  const surface = new PlaywrightSurface(page, {
+    screenshotDirectory: join(discoveryDirectory, 'screenshots'),
+  });
 
   const policy = defaultPolicy(args.startUrl, args.maxSteps ?? 30);
 
@@ -126,8 +152,8 @@ async function main(): Promise<void> {
     // is scrubbed.
     const runLog = redactRunLog(recordedRunLog, policy);
 
-    await mkdir(args.outputDirectory, { recursive: true });
-    const runLogPath = join(args.outputDirectory, `${runLog.runId}.runlog.json`);
+    await mkdir(discoveryDirectory, { recursive: true });
+    const runLogPath = join(discoveryDirectory, 'runlog.json');
     await writeFile(runLogPath, JSON.stringify(runLog, null, 2) + '\n', 'utf-8');
 
     console.error('');
@@ -140,22 +166,39 @@ async function main(): Promise<void> {
       process.exit(1);
     }
 
-    const capability = redactCapability(
-      recordCapability(recordedRunLog, {
-        capabilityId: capabilityIdFrom(args.goal),
-        name: args.goal,
-        modelId: modelProvider.modelId,
-        policy,
-      }),
+    const recorded = recordCapability(recordedRunLog, {
+      capabilityId,
+      name: args.goal,
+      modelId: modelProvider.modelId,
       policy,
-    );
-    const capabilityPath = join(args.outputDirectory, `${capability.capabilityId}.capability.json`);
+    });
+
+    // The run only ever showed the path that worked, so the checkpoints above
+    // have structure but no meaning. Naming them is what stops "no such member"
+    // replaying as a crash. Losing the names is a smaller loss than losing the
+    // capability, so a failure here is reported and stepped over.
+    let businessOutcomes: typeof recorded.businessOutcomes = [];
+    try {
+      businessOutcomes = await shapeBusinessOutcomes(recorded, modelProvider);
+    } catch (error) {
+      console.error(
+        `Could not shape business outcomes: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+
+    const capability = redactCapability({ ...recorded, businessOutcomes }, policy);
+
+    const capabilityPath = join(capabilityDirectory, 'capability.json');
     await writeFile(capabilityPath, JSON.stringify(capability, null, 2) + '\n', 'utf-8');
 
-    console.error(`Draft capability: ${capabilityPath}`);
+    console.error(`Capability: ${capabilityPath}`);
     console.error(
       `Inputs: ${capability.inputs.map((input) => input.name).join(', ') || 'none'} · ` +
         `Outputs: ${capability.outputs.map((output) => output.name).join(', ') || 'none'}`,
+    );
+    console.error(
+      `Checkpoints: ${capability.checkpoints.length} · ` +
+        `Business outcomes: ${capability.businessOutcomes.map((rule) => rule.code).join(', ') || 'none'}`,
     );
 
     console.log(JSON.stringify(capability, null, 2));
