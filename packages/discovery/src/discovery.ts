@@ -68,17 +68,19 @@ function formatObservation(observation: Observation): string {
   const lines = [
     `URL: ${observation.url}`,
     `Title: ${observation.pageTitle}`,
-    `Elements (${observation.elements.length}):`,
+    `Elements (${observation.elements.length}) — pass the ref= value to act and extract:`,
   ];
 
   for (const element of observation.elements) {
     if (!element.isVisible) continue;
 
-    let description = `  [${element.elementRef}] ${element.role}`;
+    // domId is shown unprefixed on purpose: a leading "#" reads as a CSS selector and
+    // invites the model to send it where the ref belongs.
+    let description = `  ref=${element.elementRef} ${element.role}`;
     if (element.accessibleName) description += ` "${element.accessibleName}"`;
     if (element.currentValue !== undefined) description += ` value="${element.currentValue}"`;
     if (!element.isEnabled) description += ' (disabled)';
-    if (element.domId) description += ` #${element.domId}`;
+    if (element.domId) description += ` domId=${element.domId}`;
     if (element.nearbyText && element.nearbyText.length > 0) {
       description += ` nearby:[${element.nearbyText.join(', ')}]`;
     }
@@ -92,29 +94,46 @@ function elementRefToCssSelector(elementRef: string): string {
   return `[data-understudy-ref="${elementRef}"]`;
 }
 
-function buildActionFromToolInput(input: Record<string, unknown>): Action {
+function visibleElementRefs(entries: RunLogEntry[]): string[] {
+  for (let index = entries.length - 1; index >= 0; index--) {
+    const entry = entries[index];
+    if (entry?.entryType === 'observation') {
+      return entry.observation.elements
+        .filter((element) => element.isVisible)
+        .map((element) => element.elementRef);
+    }
+  }
+  return [];
+}
+
+function buildActionFromToolInput(input: Record<string, unknown>, validRefs: string[]): Action {
   const actionType = input['actionType'] as string;
 
-  switch (actionType) {
-    case 'navigate':
-      return {
-        actionType: 'navigate',
-        url: input['url'] as string,
-      };
-    case 'click':
-      return {
-        actionType: 'click',
-        target: [{ strategy: 'css', selector: elementRefToCssSelector(input['elementRef'] as string) }],
-      };
-    case 'fill':
-      return {
-        actionType: 'fill',
-        target: [{ strategy: 'css', selector: elementRefToCssSelector(input['elementRef'] as string) }],
-        value: input['value'] as string,
-      };
-    default:
-      throw new Error(`Unknown actionType: ${actionType}`);
+  if (actionType === 'navigate') {
+    return {
+      actionType: 'navigate',
+      url: input['url'] as string,
+    };
   }
+
+  if (actionType !== 'click' && actionType !== 'fill') {
+    throw new Error(`Unknown actionType: ${actionType}`);
+  }
+
+  // Without this the ref goes straight into a selector, so a wrong one becomes
+  // [data-understudy-ref="<whatever>"] and fails as a timeout with nothing the model can act on.
+  const elementRef = input['elementRef'] as string;
+  if (!validRefs.includes(elementRef)) {
+    throw new Error(
+      `elementRef "${elementRef}" is not from the latest observation. Pass one of these exactly ` +
+        `as written: ${validRefs.join(', ')}. A domId or a CSS selector will not work here.`,
+    );
+  }
+
+  const target = [{ strategy: 'css' as const, selector: elementRefToCssSelector(elementRef) }];
+  return actionType === 'click'
+    ? { actionType: 'click', target }
+    : { actionType: 'fill', target, value: input['value'] as string };
 }
 
 export async function discover(options: DiscoveryOptions): Promise<DiscoveryResult> {
@@ -254,10 +273,10 @@ async function executeToolCall(
       return handleObserve(toolCall, surface, sequence, addEntry);
 
     case 'act':
-      return handleAct(toolCall, surface, policy, sequence, addEntry, onConfirmAction);
+      return handleAct(toolCall, surface, policy, entries, sequence, addEntry, onConfirmAction);
 
     case 'extract':
-      return handleExtract(toolCall, surface, sequence, addEntry);
+      return handleExtract(toolCall, surface, entries, sequence, addEntry);
 
     case 'finish':
       return handleFinish(toolCall, sequence);
@@ -305,13 +324,14 @@ async function handleAct(
   toolCall: ToolCall,
   surface: Surface,
   policy: Policy | undefined,
+  entries: RunLogEntry[],
   sequence: number,
   addEntry: (entry: RunLogEntry) => void,
   onConfirmAction?: DiscoveryOptions['onConfirmAction'],
 ): Promise<ToolCallResult> {
   let action: Action;
   try {
-    action = buildActionFromToolInput(toolCall.input);
+    action = buildActionFromToolInput(toolCall.input, visibleElementRefs(entries));
   } catch (error) {
     return {
       toolResult: {
@@ -444,15 +464,19 @@ async function handleAct(
 async function handleExtract(
   toolCall: ToolCall,
   surface: Surface,
+  entries: RunLogEntry[],
   sequence: number,
   addEntry: (entry: RunLogEntry) => void,
 ): Promise<ToolCallResult> {
   const elementRef = toolCall.input['elementRef'] as string;
-  if (!elementRef) {
+  const validRefs = visibleElementRefs(entries);
+  if (!validRefs.includes(elementRef)) {
     return {
       toolResult: {
         toolCallId: toolCall.toolCallId,
-        content: 'Missing required field: elementRef',
+        content:
+          `elementRef "${elementRef}" is not from the latest observation. Pass one of these ` +
+          `exactly as written: ${validRefs.join(', ')}. A domId or a CSS selector will not work here.`,
         isError: true,
       },
       nextSequence: sequence,

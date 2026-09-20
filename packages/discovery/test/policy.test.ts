@@ -4,16 +4,26 @@ import type { Observation, Policy } from '@understudy/schemas';
 import type { Surface } from '@understudy/surface';
 import { discover } from '../src/discovery.js';
 
-const emptyObservation: Observation = {
+// Carries e1 because discovery only accepts an elementRef it actually handed out in the
+// latest observation; acting on an element the model was never shown is refused.
+const observationWithOneField: Observation = {
   url: 'http://localhost:3000',
   pageTitle: 'Test',
-  elements: [],
+  elements: [
+    {
+      elementRef: 'e1',
+      role: 'textbox',
+      accessibleName: 'Field',
+      isEnabled: true,
+      isVisible: true,
+    },
+  ],
   capturedAt: '2026-09-17T00:00:00.000Z',
 };
 
 function makeSurface(): Surface {
   return {
-    observe: vi.fn<() => Promise<Observation>>().mockResolvedValue(emptyObservation),
+    observe: vi.fn<() => Promise<Observation>>().mockResolvedValue(observationWithOneField),
     act: vi.fn<() => Promise<void>>().mockResolvedValue(undefined),
     resolve: vi.fn().mockResolvedValue({ rungIndex: 0, rung: { strategy: 'css', selector: '#x' }, matchCount: 1 }),
     extractText: vi.fn().mockResolvedValue({ text: 'hello', resolveResult: { rungIndex: 0 } }),
