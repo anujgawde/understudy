@@ -173,6 +173,11 @@ export async function execute(options: ExecutorOptions): Promise<ExecutorResult>
   const entries: RunLogEntry[] = [];
   let sequence = 0;
 
+  const record = async (entry: RunLogEntry): Promise<void> => {
+    entries.push(entry);
+    await options.onEntry?.(entry);
+  };
+
   const terminal: TerminalState = { completedAllSteps: true, outputs: {} };
   let lastSuccessfulStepId: string | undefined;
   let clearedAuth = false;
@@ -191,7 +196,7 @@ export async function execute(options: ExecutorOptions): Promise<ExecutorResult>
       stepsToRun = [];
 
       if (gate.checkpointId) {
-        entries.push({
+        await record({
           entryType: 'assertion',
           sequence: sequence++,
           occurredAt: new Date().toISOString(),
@@ -217,7 +222,7 @@ export async function execute(options: ExecutorOptions): Promise<ExecutorResult>
         const resolveResult = await surface.resolve(action.target);
         resolvedByIndex = resolveResult.rungIndex;
       } catch {
-        entries.push({
+        await record({
           entryType: 'action',
           sequence: sequence++,
           occurredAt: new Date().toISOString(),
@@ -238,7 +243,7 @@ export async function execute(options: ExecutorOptions): Promise<ExecutorResult>
     try {
       await surface.act(action, step.waitFor);
     } catch (error) {
-      entries.push({
+      await record({
         entryType: 'action',
         sequence: sequence++,
         occurredAt: new Date().toISOString(),
@@ -256,7 +261,7 @@ export async function execute(options: ExecutorOptions): Promise<ExecutorResult>
       break;
     }
 
-    entries.push({
+    await record({
       entryType: 'action',
       sequence: sequence++,
       occurredAt: new Date().toISOString(),
@@ -277,7 +282,7 @@ export async function execute(options: ExecutorOptions): Promise<ExecutorResult>
     for (const checkpoint of stepCheckpoints) {
       const result = await evaluateCheckpoint(checkpoint, surface);
 
-      entries.push({
+      await record({
         entryType: 'assertion',
         sequence: sequence++,
         occurredAt: new Date().toISOString(),
@@ -307,7 +312,7 @@ export async function execute(options: ExecutorOptions): Promise<ExecutorResult>
         const { text } = await surface.extractText(extraction.target);
         rawValue = text;
       } catch {
-        entries.push({
+        await record({
           entryType: 'extraction',
           sequence: sequence++,
           occurredAt: new Date().toISOString(),
@@ -324,7 +329,7 @@ export async function execute(options: ExecutorOptions): Promise<ExecutorResult>
 
       const coercion = coerceValue(rawValue, extraction.valueType);
 
-      entries.push({
+      await record({
         entryType: 'extraction',
         sequence: sequence++,
         occurredAt: new Date().toISOString(),
@@ -379,7 +384,7 @@ export async function execute(options: ExecutorOptions): Promise<ExecutorResult>
       pageUrl: await surface.pageUrl().catch(() => undefined),
     });
 
-    entries.push({
+    await record({
       entryType: 'intervention',
       sequence: sequence++,
       occurredAt: new Date().toISOString(),

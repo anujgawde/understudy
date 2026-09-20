@@ -1,4 +1,4 @@
-import type { Capability, FailureCode, RunLog } from '@understudy/schemas';
+import type { Capability, FailureCode, RunLog, RunLogEntry } from '@understudy/schemas';
 import type { Surface } from '@understudy/surface';
 import type { Intervention, SessionRegistry } from '@understudy/session';
 
@@ -26,6 +26,10 @@ export interface ExecutorOptions {
   // re-entered, but only once the gate below confirms the page still satisfies
   // what the previous step established.
   resumeAtStepId?: string;
+  // Called as each entry is recorded, while the page is still in the state that
+  // produced it — which is the only moment a caller can photograph it. Awaited,
+  // so a slow observer holds the run rather than racing the next step.
+  onEntry?: (entry: RunLogEntry) => void | Promise<void>;
 }
 
 export interface ExecutorResult {
