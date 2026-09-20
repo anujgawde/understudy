@@ -124,11 +124,11 @@ const policy: Policy = {
 };
 
 describe('Capability recording', () => {
-  test('emits a draft artifact that satisfies the schema', () => {
+  test('emits a usable artifact that satisfies the schema', () => {
     const capability = recordCapability(loginAndLookUp, options);
 
     expect(() => Capability.parse(capability)).not.toThrow();
-    expect(capability.status).toBe('draft');
+    expect(capability.status).toBe('approved');
     expect(capability.version).toBe(1);
     expect(capability.provenance).toMatchObject({
       discoveredByModel: 'test-model',
@@ -219,6 +219,77 @@ describe('Capability recording', () => {
     expect(waits['fill-userId']).toBeNull();
     expect(waits['click-signOn']).toBe('pageLoad');
     expect(waits['click-search']).toBe('pageLoad');
+  });
+
+  test('each step that changed the page is guarded by a URL checkpoint', () => {
+    const capability = recordCapability(loginAndLookUp, options);
+
+    const urlCheckpoints = capability.checkpoints.filter((checkpoint) =>
+      checkpoint.allOf.every((assertion) => assertion.assert === 'url_matches'),
+    );
+
+    expect(
+      urlCheckpoints.map((checkpoint) => [checkpoint.checkpointId, checkpoint.afterStepId]),
+    ).toEqual([
+      ['reached-search', 'click-signOn'],
+      ['reached-member', 'click-search'],
+    ]);
+
+    // Only the path is asserted: the origin moves between environments and
+    // tenants, the path is what says where the flow got to.
+    const pattern = urlCheckpoints[0]!.allOf[0]!;
+    expect(pattern).toMatchObject({ assert: 'url_matches' });
+    expect(
+      new RegExp((pattern as { pattern: string }).pattern).test('https://other.host/search'),
+    ).toBe(true);
+    expect(
+      new RegExp((pattern as { pattern: string }).pattern).test(
+        'http://localhost:4100/search-archive',
+      ),
+    ).toBe(false);
+  });
+
+  test('the extracted values are guarded by a checkpoint on the step that revealed them', () => {
+    const capability = recordCapability(loginAndLookUp, options);
+
+    const resultCheckpoint = capability.checkpoints.find(
+      (checkpoint) => checkpoint.checkpointId === 'results-present',
+    );
+
+    // Both values appeared on the page the search landed on, so both are
+    // asserted after that step — this is what tells a member who does not exist
+    // apart from an extraction selector that has drifted.
+    expect(resultCheckpoint?.afterStepId).toBe('click-search');
+    expect(resultCheckpoint?.allOf).toHaveLength(2);
+    expect(
+      resultCheckpoint?.allOf.every((assertion) => assertion.assert === 'element_present'),
+    ).toBe(true);
+  });
+
+  test('a URL carrying a supplied input is not turned into a checkpoint', () => {
+    // /member/100234 would pin the capability to one member, which is the
+    // opposite of what a checkpoint is for.
+    const perMemberUrlRun: RunLog = {
+      ...loginAndLookUp,
+      inputs: { memberNumber: '100234' },
+      entries: loginAndLookUp.entries.map((entry) =>
+        entry.entryType === 'observation' && entry.observation.url.endsWith('/member')
+          ? observed(
+              entry.sequence,
+              'http://localhost:4100/member/100234',
+              'Share Summary',
+              detailPage,
+            )
+          : entry,
+      ),
+    };
+
+    const capability = recordCapability(perMemberUrlRun, options);
+
+    expect(JSON.stringify(capability.checkpoints)).not.toContain('100234');
+    expect(capability.checkpoints.map((checkpoint) => checkpoint.checkpointId)).not.toContain(
+      'reached-member100234',
+    );
   });
 
   test('no ephemeral discovery handle or extracted value leaks into the artifact', () => {

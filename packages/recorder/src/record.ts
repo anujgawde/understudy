@@ -1,5 +1,7 @@
 import type {
+  Assertion,
   Capability,
+  Checkpoint,
   Observation,
   ObservedElement,
   RunLog,
@@ -26,7 +28,11 @@ function extractedValues(runLog: RunLog): Map<string, ExtractedValue> {
     if (entry.entryType === 'observation') {
       observation = entry.observation;
     } else if (entry.entryType === 'extraction' && observation !== null) {
-      found.set(entry.outputName, { rawValue: entry.rawValue, observation });
+      found.set(entry.outputName, {
+        rawValue: entry.rawValue,
+        observation,
+        sequence: entry.sequence,
+      });
     }
   }
 
@@ -66,6 +72,27 @@ function valueCameFromOutside(value: string, runLog: RunLog): boolean {
   return value.length > 2 && (runLog.goal?.toLowerCase().includes(value.toLowerCase()) ?? false);
 }
 
+/**
+ * A `url_matches` pattern for the page a step landed on. Only the path is used:
+ * the origin changes between environments and tenants, while the path is the
+ * part that identifies where the flow got to. Escaped so it matches literally,
+ * and closed off so a checkpoint on /members/search is not satisfied by
+ * /members/search-archive.
+ *
+ * Returns null when the path carries a value the run was handed — a URL like
+ * /members/12345 would pin the capability to one member, which is the opposite
+ * of what a checkpoint is for.
+ */
+function urlPathPattern(url: string, runLog: RunLog): string | null {
+  const path = new URL(url).pathname;
+  if (path === '/') return null;
+
+  const inputValues = Object.values(runLog.inputs);
+  if (inputValues.some((value) => value.length > 0 && path.includes(value))) return null;
+
+  return `${path.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(\\?|$)`;
+}
+
 // Mirrors the replay executor's numeric coercion, so a value the recorder types
 // as a number is one replay can actually read back as a number.
 function inferValueType(rawValue: string): ValueType {
@@ -85,8 +112,10 @@ export function recordCapability(runLog: RunLog, options: RecordingOptions): Cap
 
   const takenStepIds = new Set<string>();
   const takenValueNames = new Set<string>();
+  const takenCheckpointIds = new Set<string>();
   const inputs: Capability['inputs'] = [];
   const steps: Step[] = [];
+  const checkpoints: Checkpoint[] = [];
 
   distilledSteps.forEach((distilled, index) => {
     const element = distilled.elementRef
@@ -139,22 +168,57 @@ export function recordCapability(runLog: RunLog, options: RecordingOptions): Cap
       (after.observation.url !== distilled.observationBefore.url ||
         after.observation.pageTitle !== distilled.observationBefore.pageTitle);
 
+    const stepId = uniqueName(
+      `${action.actionType}-${identifierFrom(label ?? '') || String(index + 1)}`,
+      takenStepIds,
+    );
+
     steps.push({
-      stepId: uniqueName(
-        `${action.actionType}-${identifierFrom(label ?? '') || String(index + 1)}`,
-        takenStepIds,
-      ),
+      stepId,
       action,
       ...(movedToANewPage && { waitFor: { waitUntil: 'pageLoad' as const } }),
     });
+
+    // A step that moved the flow to a new page is the one worth asserting on:
+    // it is where a login that silently failed, or a search that bounced back
+    // to its own form, stops looking like progress.
+    if (movedToANewPage && after !== undefined) {
+      const pattern = urlPathPattern(after.observation.url, runLog);
+      if (pattern !== null) {
+        checkpoints.push({
+          checkpointId: uniqueName(
+            `reached-${identifierFrom(new URL(after.observation.url).pathname) || String(index + 1)}`,
+            takenCheckpointIds,
+          ),
+          afterStepId: stepId,
+          allOf: [{ assert: 'url_matches', pattern }],
+        });
+      }
+    }
   });
 
   const outputs: Capability['outputs'] = [];
   const extractions: Capability['extractions'] = [];
 
+  // Grouped by the step each value was already on screen after. This is the
+  // load-bearing checkpoint: it separates "the result never appeared" — a member
+  // number that matches nobody — from "the extraction selector broke", which is
+  // the distinction every business outcome downstream rests on.
+  const resultAssertions = new Map<string, Assertion[]>();
+
   for (const [elementRef, extracted] of extractedValues(runLog)) {
     const target = deriveLadder(elementRef, extracted.observation);
     if (target === null) continue;
+
+    const guardingStepId =
+      steps[distilledSteps.findLastIndex((distilled) => distilled.sequence < extracted.sequence)]
+        ?.stepId;
+    if (guardingStepId !== undefined) {
+      resultAssertions.set(guardingStepId, [
+        ...(resultAssertions.get(guardingStepId) ?? []),
+        { assert: 'element_present', target },
+      ]);
+    }
 
     const label = labelFor(elementIn(extracted.observation, elementRef));
     const name = uniqueName(
@@ -167,16 +231,30 @@ export function recordCapability(runLog: RunLog, options: RecordingOptions): Cap
     extractions.push({ outputName: name, target, valueType });
   }
 
+  for (const [afterStepId, allOf] of resultAssertions) {
+    checkpoints.push({
+      checkpointId: uniqueName('results-present', takenCheckpointIds),
+      afterStepId,
+      allOf,
+    });
+  }
+
   return {
     capabilityId: options.capabilityId,
     name: options.name,
     version: 1,
     goal: runLog.goal ?? options.name,
-    status: 'draft',
+    // Recorded ready to use. A capability is only ever written for a run that
+    // succeeded, so a draft gate here would filter nothing — it would just mean
+    // every capability sat unusable until a human ticked a box that had no
+    // information behind it. What would make the status mean something is
+    // verifying the artifact against the page rather than trusting the model's
+    // own claim of success; see the deferred review in the build plan.
+    status: 'approved',
     inputs,
     outputs,
     steps,
-    checkpoints: [],
+    checkpoints,
     extractions,
     businessOutcomes: [],
     provenance: {

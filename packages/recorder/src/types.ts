@@ -3,6 +3,9 @@ import type { Action, Observation, Policy } from '@understudy/schemas';
 export interface ExtractedValue {
   rawValue: string;
   observation: Observation;
+  // Sequence of the extraction entry, so the recorder can tell which step the
+  // value was already on screen after and guard it with a checkpoint there.
+  sequence: number;
 }
 
 export interface RecordingOptions {
