@@ -24,7 +24,7 @@ function parseCliArguments() {
   const goal = positionals[0];
   if (!goal) {
     console.error(
-      'Usage: run <goal> [--input key=value ...] [--provider gemini|anthropic|ollama] ' +
+      'Usage: task <goal> [--input key=value ...] [--provider gemini|anthropic|ollama] ' +
         '[--url http://...] [--headed] [--output dir] [--model model-id]',
     );
     process.exit(1);
