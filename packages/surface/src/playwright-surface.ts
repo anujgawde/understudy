@@ -15,6 +15,7 @@ import { collectPageElements } from './enrichment.js';
 export class PlaywrightSurface implements Surface {
   private page: Page;
   private screenshotDirectory: string | undefined;
+  private observationCount = 0;
 
   constructor(page: Page, options?: PlaywrightSurfaceOptions) {
     this.page = page;
@@ -40,7 +41,10 @@ export class PlaywrightSurface implements Surface {
         .catch(() => undefined);
 
       await mkdir(this.screenshotDirectory, { recursive: true });
-      const filename = `observe-${Date.now()}.png`;
+      // Counted rather than timestamped: epoch millis is 13 digits, which the
+      // payment-card pattern in the policy matches, so every path in the run log
+      // came out as observe-[redacted].png and resolved to nothing.
+      const filename = `observe-${String(this.observationCount++).padStart(3, '0')}.png`;
       screenshotPath = join(this.screenshotDirectory, filename);
       await this.page.screenshot({ path: screenshotPath, fullPage: true });
     }

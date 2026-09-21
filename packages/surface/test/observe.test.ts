@@ -2,7 +2,9 @@ import { describe, test, expect, beforeAll, afterAll } from 'vitest';
 import { chromium, type Browser, type Page } from 'playwright';
 import { spawn, type ChildProcess } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { resolve, dirname } from 'node:path';
+import { mkdtemp } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { basename, join, resolve, dirname } from 'node:path';
 import { Observation } from '@understudy/schemas';
 import { PlaywrightSurface } from '../src/playwright-surface.js';
 
@@ -226,5 +228,22 @@ describe('PlaywrightSurface.observe', () => {
 
     expect(stampedCount).toBe(second.elements.length);
     expect(first.elements[0]!.elementRef).toBe(second.elements[0]!.elementRef);
+  });
+
+  test('screenshots are numbered in observation order', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'understudy-screenshots-'));
+    const capturing = new PlaywrightSurface(page, { screenshotDirectory: directory });
+    await page.goto(`${BASE_URL}/login`);
+
+    const first = await capturing.observe();
+    const second = await capturing.observe();
+
+    expect(basename(first.screenshotPath!)).toBe('observe-000.png');
+    expect(basename(second.screenshotPath!)).toBe('observe-001.png');
+
+    // The name used to be Date.now(), and 13 consecutive digits is what the
+    // payment-card pattern in the policy looks for, so redaction rewrote every
+    // screenshot path in the run log into one that resolves to nothing.
+    expect(basename(second.screenshotPath!)).not.toMatch(/\d(?:[ -]?\d){12,18}/);
   });
 });
