@@ -18,6 +18,14 @@ export function classify(
   businessOutcomes: BusinessOutcomeRule[],
 ): Outcome {
   if (state.completedAllSteps) {
+    if (state.recoveredFrom) {
+      return {
+        classification: 'recovered',
+        recoveredFrom: state.recoveredFrom,
+        attempts: state.attempts ?? 2,
+        outputs: state.outputs,
+      };
+    }
     return { classification: 'success', outputs: state.outputs };
   }
 

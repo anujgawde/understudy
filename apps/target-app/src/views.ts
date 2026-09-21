@@ -384,19 +384,28 @@ export function chrome(opts: {
   statusMessage?: string;
 }): string {
   const navItems = [
-    { section: 'MEMBER SERVICES', items: [
-      { id: 'search', label: 'Member Search', href: '/members/search' },
-      { id: 'detail', label: 'Member Detail', href: '#' },
-      { id: 'open-account', label: 'Open Sub-Account', href: '#' },
-    ]},
-    { section: 'REPORTS', items: [
-      { id: 'daily', label: 'Daily Activity', href: '#' },
-      { id: 'audit', label: 'Audit Trail', href: '#' },
-    ]},
-    { section: 'ADMINISTRATION', items: [
-      { id: 'users', label: 'User Management', href: '#' },
-      { id: 'branches', label: 'Branch Config', href: '#' },
-    ]},
+    {
+      section: 'MEMBER SERVICES',
+      items: [
+        { id: 'search', label: 'Member Search', href: '/members/search' },
+        { id: 'detail', label: 'Member Detail', href: '#' },
+        { id: 'open-account', label: 'Open Sub-Account', href: '#' },
+      ],
+    },
+    {
+      section: 'REPORTS',
+      items: [
+        { id: 'daily', label: 'Daily Activity', href: '#' },
+        { id: 'audit', label: 'Audit Trail', href: '#' },
+      ],
+    },
+    {
+      section: 'ADMINISTRATION',
+      items: [
+        { id: 'users', label: 'User Management', href: '#' },
+        { id: 'branches', label: 'Branch Config', href: '#' },
+      ],
+    },
   ];
 
   const tabs = [
@@ -477,10 +486,7 @@ export function memberSearchPage(opts: {
   const c = opts.criteria ?? {};
 
   const branchOptions = ['ALL', 'MAIN', 'WEST', 'EAST', 'NORTH']
-    .map(
-      (b) =>
-        `<option value="${b}"${b === (c.branch ?? 'ALL') ? ' selected' : ''}>${b}</option>`,
-    )
+    .map((b) => `<option value="${b}"${b === (c.branch ?? 'ALL') ? ' selected' : ''}>${b}</option>`)
     .join('');
 
   let resultsHtml = '';
@@ -612,29 +618,32 @@ export function memberSearchPage(opts: {
   `;
 }
 
-export function memberDetailPage(member: {
-  memberNumber: string;
-  name: string;
-  ssn: string;
-  dob: string;
-  address: string;
-  city: string;
-  state: string;
-  zip: string;
-  phone: string;
-  email: string;
-  branch: string;
-  memberSince: string;
-  shares: Array<{
-    id: string;
-    typeCode: string;
-    description: string;
-    currentBalance: string;
-    availableBalance: string;
-    maturityDate: string;
-    status: 'Open' | 'Closed';
-  }>;
-}): string {
+export function memberDetailPage(
+  member: {
+    memberNumber: string;
+    name: string;
+    ssn: string;
+    dob: string;
+    address: string;
+    city: string;
+    state: string;
+    zip: string;
+    phone: string;
+    email: string;
+    branch: string;
+    memberSince: string;
+    shares: Array<{
+      id: string;
+      typeCode: string;
+      description: string;
+      currentBalance: string;
+      availableBalance: string;
+      maturityDate: string;
+      status: 'Open' | 'Closed';
+    }>;
+  },
+  options?: { shareSummaryDelayMilliseconds?: number },
+): string {
   const now = new Date();
   const asOf = `${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
 
@@ -662,6 +671,65 @@ export function memberDetailPage(member: {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
+
+  // The panel frame is served with the page and the rows arrive a beat later,
+  // which is the ordinary shape of a grid that fetches after render. A replay
+  // whose wait condition is satisfied by the frame still reads the rows too
+  // early, and that is the condition the read-only retry exists to clear.
+  const delayMilliseconds = options?.shareSummaryDelayMilliseconds;
+  const initialShareRows = delayMilliseconds
+    ? `<template id="ctl00_ContentMain_tplShareRows">${shareRows}</template>`
+    : shareRows;
+  const deferredRowsScript = delayMilliseconds
+    ? `<script>
+         setTimeout(function () {
+           var body = document.getElementById('ctl00_ContentMain_grdShares_body');
+           var tpl = document.getElementById('ctl00_ContentMain_tplShareRows');
+           body.innerHTML = tpl.innerHTML;
+         }, ${delayMilliseconds});
+       </script>`
+    : '';
+
+  const shareSummaryMarkup = `
+    <div class="ctl00_Panel">
+      <div class="ctl00_Panel_Head">
+        SHARE SUMMARY
+        <span style="float:right; font-weight:400; text-transform:none; font-size:9px">
+          As of ${asOf}
+        </span>
+      </div>
+      <div class="ctl00_Panel_Body" style="padding:0">
+        <table class="ctl00_Grid" id="ctl00_ContentMain_grdShares">
+          <colgroup>
+            <col style="width:70px">
+            <col>
+            <col style="width:116px">
+            <col style="width:108px">
+            <col style="width:98px">
+            <col style="width:86px">
+          </colgroup>
+          <thead>
+            <tr>
+              <th>Share ID</th>
+              <th>Description</th>
+              <th style="text-align:right">Current Balance</th>
+              <th style="text-align:right">Available</th>
+              <th>Maturity</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="ctl00_ContentMain_grdShares_body">${initialShareRows}</tbody>
+          <tfoot>
+            <tr>
+              <td colspan="2" style="text-align:right; font-weight:700; background:#e8e4dc">Total (Open):</td>
+              <td style="text-align:right; font-weight:700; background:#e8e4dc">$${totalFormatted}</td>
+              <td colspan="3" style="background:#e8e4dc"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+`;
 
   return `
     <div class="ctl00_Panel">
@@ -702,44 +770,8 @@ export function memberDetailPage(member: {
       </div>
     </div>
 
-    <div class="ctl00_Panel">
-      <div class="ctl00_Panel_Head">
-        SHARE SUMMARY
-        <span style="float:right; font-weight:400; text-transform:none; font-size:9px">
-          As of ${asOf}
-        </span>
-      </div>
-      <div class="ctl00_Panel_Body" style="padding:0">
-        <table class="ctl00_Grid" id="ctl00_ContentMain_grdShares">
-          <colgroup>
-            <col style="width:70px">
-            <col>
-            <col style="width:116px">
-            <col style="width:108px">
-            <col style="width:98px">
-            <col style="width:86px">
-          </colgroup>
-          <thead>
-            <tr>
-              <th>Share ID</th>
-              <th>Description</th>
-              <th style="text-align:right">Current Balance</th>
-              <th style="text-align:right">Available</th>
-              <th>Maturity</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>${shareRows}</tbody>
-          <tfoot>
-            <tr>
-              <td colspan="2" style="text-align:right; font-weight:700; background:#e8e4dc">Total (Open):</td>
-              <td style="text-align:right; font-weight:700; background:#e8e4dc">$${totalFormatted}</td>
-              <td colspan="3" style="background:#e8e4dc"></td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-    </div>
+    ${shareSummaryMarkup}
+    ${deferredRowsScript}
 
     <div style="margin-top:10px">
       <input type="button" value="Open Sub-Account" id="ctl00_ContentMain_btnOpenSub" class="ctl00_Btn" />
@@ -751,4 +783,3 @@ export function memberDetailPage(member: {
     </div>
   `;
 }
-

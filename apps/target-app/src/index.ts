@@ -7,6 +7,8 @@ import {
   MAGIC_NOT_FOUND,
   MAGIC_VALIDATION_ERROR,
   MAGIC_SESSION_TIMEOUT,
+  MAGIC_SLOW_RENDER,
+  SLOW_RENDER_DELAY_MILLISECONDS,
 } from './data.js';
 
 const PORT = Number(process.env.TARGET_APP_PORT ?? 4000);
@@ -193,7 +195,12 @@ app.post('/members/detail', requireAuth, (req, res) => {
     return;
   }
 
-  const content = memberDetailPage(member);
+  const content = memberDetailPage(
+    member,
+    memberNumber === MAGIC_SLOW_RENDER
+      ? { shareSummaryDelayMilliseconds: SLOW_RENDER_DELAY_MILLISECONDS }
+      : undefined,
+  );
   res.type('html').send(
     chrome({
       title: `Member Detail - ${member.memberNumber}`,

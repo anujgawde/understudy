@@ -112,6 +112,40 @@ const MEMBERS: Member[] = [
       },
     ],
   },
+  {
+    memberNumber: '66666',
+    name: 'ALVAREZ, DIANE R',
+    ssn: '***-**-3301',
+    dob: '07/22/1981',
+    address: '119 BIRCHWOOD LN',
+    city: 'CARMEL',
+    state: 'IN',
+    zip: '46032',
+    phone: '(317) 555-0198',
+    email: 'dalvarez@mailhost.net',
+    branch: 'WEST',
+    memberSince: '02/08/2011',
+    shares: [
+      {
+        id: 'S0001',
+        typeCode: '00',
+        description: 'Regular Share Savings',
+        currentBalance: '2,940.15',
+        availableBalance: '2,940.15',
+        maturityDate: '',
+        status: 'Open',
+      },
+      {
+        id: 'S0010',
+        typeCode: '10',
+        description: 'Checking',
+        currentBalance: '610.44',
+        availableBalance: '610.44',
+        maturityDate: '',
+        status: 'Open',
+      },
+    ],
+  },
 ];
 
 export function findMember(memberNumber: string): Member | undefined {
@@ -137,3 +171,8 @@ export function searchMembers(criteria: {
 export const MAGIC_NOT_FOUND = '99999';
 export const MAGIC_VALIDATION_ERROR = '88888';
 export const MAGIC_SESSION_TIMEOUT = '77777';
+
+// Renders the member detail page with its share summary injected a beat after
+// load, so a replay's first checkpoint read misses it and the second finds it.
+export const MAGIC_SLOW_RENDER = '66666';
+export const SLOW_RENDER_DELAY_MILLISECONDS = 1_500;

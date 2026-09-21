@@ -8,6 +8,11 @@ export interface TerminalState {
   failureCode?: FailureCode;
   failureMessage?: string;
   failedCheckpointId?: string;
+  // Set when a read-only check failed once and passed on a second look. The run
+  // still reaches its outputs, but it did not get there first time and the
+  // outcome says so rather than presenting itself as a clean success.
+  recoveredFrom?: FailureCode;
+  attempts?: number;
   outputs: Record<string, unknown>;
 }
 

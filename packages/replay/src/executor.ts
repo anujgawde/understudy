@@ -11,12 +11,7 @@ import type { Surface } from '@understudy/surface';
 import type { Intervention } from '@understudy/session';
 import { raiseIntervention, shouldEscalate } from '@understudy/session';
 import { classify } from './classifier.js';
-import type {
-  ExecutorOptions,
-  ExecutorResult,
-  ReassertResult,
-  TerminalState,
-} from './types.js';
+import type { ExecutorOptions, ExecutorResult, ReassertResult, TerminalState } from './types.js';
 
 const AUTH_URL_PATTERN = /(^|[/.])(login|log-in|signin|sign-in|auth|sso|session)([/?#]|$)/i;
 
@@ -36,6 +31,15 @@ async function looksLikeAuthPage(surface: Surface): Promise<boolean> {
 // Only a run that had already cleared the auth wall can be said to have lost the
 // session; a capability that simply starts on a login page has not.
 const AMBIGUOUS_FAILURES = new Set(['locator_not_found', 'assertion_failed', 'extraction_failed']);
+
+// Checkpoints and extractions only read the page, so trying them a second time
+// cannot submit anything twice. Clicks and fills get no retry for exactly that
+// reason: replay would have no way to know whether the first one took effect.
+const RECOVERY_DELAY_MILLISECONDS = 2_000;
+
+function waitBeforeRetry(): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, RECOVERY_DELAY_MILLISECONDS));
+}
 
 function substituteInputs(value: string, inputs: Record<string, string>): string {
   return value.replace(/\{\{(\w+)\}\}/g, (_match, inputName: string) => {
@@ -280,7 +284,7 @@ export async function execute(options: ExecutorOptions): Promise<ExecutorResult>
     );
 
     for (const checkpoint of stepCheckpoints) {
-      const result = await evaluateCheckpoint(checkpoint, surface);
+      let result = await evaluateCheckpoint(checkpoint, surface);
 
       await record({
         entryType: 'assertion',
@@ -290,6 +294,25 @@ export async function execute(options: ExecutorOptions): Promise<ExecutorResult>
         checkpointId: checkpoint.checkpointId,
         passed: result.passed,
       });
+
+      if (!result.passed) {
+        await waitBeforeRetry();
+        result = await evaluateCheckpoint(checkpoint, surface);
+
+        await record({
+          entryType: 'assertion',
+          sequence: sequence++,
+          occurredAt: new Date().toISOString(),
+          actor: 'system',
+          checkpointId: checkpoint.checkpointId,
+          passed: result.passed,
+        });
+
+        if (result.passed) {
+          terminal.recoveredFrom = 'assertion_failed';
+          terminal.attempts = 2;
+        }
+      }
 
       if (!result.passed) {
         const failedDescription = describeAssertion(result.failedAssertion!);
@@ -312,19 +335,27 @@ export async function execute(options: ExecutorOptions): Promise<ExecutorResult>
         const { text } = await surface.extractText(extraction.target);
         rawValue = text;
       } catch {
-        await record({
-          entryType: 'extraction',
-          sequence: sequence++,
-          occurredAt: new Date().toISOString(),
-          actor: 'system',
-          outputName: extraction.outputName,
-          rawValue: '',
-          coerced: false,
-        });
-        terminal.completedAllSteps = false;
-        terminal.failureCode = 'extraction_failed';
-        terminal.failureMessage = `Extraction "${extraction.outputName}": no rung in the locator ladder matched`;
-        break;
+        await waitBeforeRetry();
+        try {
+          const { text } = await surface.extractText(extraction.target);
+          rawValue = text;
+          terminal.recoveredFrom = 'extraction_failed';
+          terminal.attempts = 2;
+        } catch {
+          await record({
+            entryType: 'extraction',
+            sequence: sequence++,
+            occurredAt: new Date().toISOString(),
+            actor: 'system',
+            outputName: extraction.outputName,
+            rawValue: '',
+            coerced: false,
+          });
+          terminal.completedAllSteps = false;
+          terminal.failureCode = 'extraction_failed';
+          terminal.failureMessage = `Extraction "${extraction.outputName}": no rung in the locator ladder matched`;
+          break;
+        }
       }
 
       const coercion = coerceValue(rawValue, extraction.valueType);

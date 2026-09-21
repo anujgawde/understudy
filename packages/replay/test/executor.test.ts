@@ -151,6 +151,53 @@ describe('Executor', () => {
     expect(page.url()).toContain('/members/detail');
   });
 
+
+  test(
+    'a checkpoint that fails once and then holds is classified recovered',
+    { timeout: 30_000 },
+    async () => {
+      await page.goto(`${BASE_URL}/logout`);
+
+      // Member 66666 serves the share grid frame with the page and injects its
+      // rows a beat later, so the first read of this checkpoint is too early.
+      const capability = makeLookupCapability(BASE_URL);
+      capability.steps = capability.steps.map((step) =>
+        step.stepId === 'click-member-row'
+          ? {
+              ...step,
+              action: {
+                actionType: 'click',
+                target: [{ strategy: 'text', text: 'ALVAREZ, DIANE R' }],
+              },
+            }
+          : step,
+      );
+      capability.checkpoints = [
+        {
+          checkpointId: 'shares-listed',
+          afterStepId: 'click-member-row',
+          allOf: [{ assert: 'text_present', text: 'Regular Share Savings' }],
+        },
+      ];
+
+      const { runLog } = await execute({
+        capability,
+        surface,
+        inputs: { memberNumber: '66666' },
+      });
+
+      expect(runLog.outcome).toEqual({
+        classification: 'recovered',
+        recoveredFrom: 'assertion_failed',
+        attempts: 2,
+        outputs: {},
+      });
+
+      const assertions = runLog.entries.filter((e) => e.entryType === 'assertion');
+      expect(assertions.map((e) => e.passed)).toEqual([false, true]);
+    },
+  );
+
   test('run log entries have sequential sequence numbers', { timeout: 30_000 }, async () => {
     await page.goto(`${BASE_URL}/logout`);
 
