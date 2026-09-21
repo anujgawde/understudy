@@ -10,6 +10,7 @@ import { discover } from '@understudy/discovery';
 import { recordCapability, shapeBusinessOutcomes } from '@understudy/recorder';
 import { redactCapability, redactRunLog, redactText } from '@understudy/redaction';
 import { defaultPolicy } from './policy.js';
+import { syncCapability, syncRunLog } from './server-sync.js';
 
 function parseCliArguments() {
   const { values, positionals } = parseArgs({
@@ -155,6 +156,7 @@ async function main(): Promise<void> {
     await mkdir(discoveryDirectory, { recursive: true });
     const runLogPath = join(discoveryDirectory, 'runlog.json');
     await writeFile(runLogPath, JSON.stringify(runLog, null, 2) + '\n', 'utf-8');
+    await syncRunLog(runLog);
 
     console.error('');
     console.error(`Outcome: ${runLog.outcome?.classification ?? 'unknown'}`);
@@ -190,6 +192,7 @@ async function main(): Promise<void> {
 
     const capabilityPath = join(capabilityDirectory, 'capability.json');
     await writeFile(capabilityPath, JSON.stringify(capability, null, 2) + '\n', 'utf-8');
+    await syncCapability(capability);
 
     console.error(`Capability: ${capabilityPath}`);
     console.error(

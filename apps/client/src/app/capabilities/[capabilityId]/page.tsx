@@ -8,14 +8,13 @@ import { Button } from '@/components/button';
 import { LocatorLadderView } from '@/components/locator-ladder';
 import { MicroBadge } from '@/components/micro-badge';
 import { Panel } from '@/components/panel';
-import { capabilities } from '@/fixtures';
+import { getCapability } from '@/lib/data';
 import type { Assertion, Capability, Checkpoint, Step, WaitCondition } from '@/types';
 
 async function approveCapability(formData: FormData) {
   'use server';
   const capabilityId = String(formData.get('capabilityId'));
-  const capability = capabilities.find((one) => one.capabilityId === capabilityId);
-  if (capability) capability.status = 'approved';
+  // TODO: persist approval when server mode is wired
   revalidatePath(`/capabilities/${capabilityId}`);
 }
 
@@ -363,7 +362,7 @@ export default async function ArtifactReviewerPage({
 }) {
   const { capabilityId } = await params;
   const { tab } = await searchParams;
-  const capability = capabilities.find((one) => one.capabilityId === capabilityId);
+  const capability = await getCapability(capabilityId);
   if (!capability) notFound();
 
   const activeTab = tab === 'steps' ? 'steps' : 'contract';

@@ -4,7 +4,7 @@ import { AppShell } from '@/components/app-shell';
 import { OutcomeBanner } from '@/components/outcome-banner';
 import { Panel } from '@/components/panel';
 import { StepTimeline } from '@/components/step-timeline';
-import { runs } from '@/fixtures';
+import { getReplayRun, getReplayRuns } from '@/lib/data';
 import type { Outcome, OutcomeClassification, RunLog } from '@/types';
 
 const classifications: OutcomeClassification[] = [
@@ -177,9 +177,10 @@ export default async function ReplayResultPage({
   params: Promise<{ runId: string }>;
 }) {
   const { runId } = await params;
-  const run = runs.find((one) => one.runId === runId);
+  const run = await getReplayRun(runId);
   if (!run?.outcome) notFound();
 
+  const allRuns = await getReplayRuns(run.capabilityId);
   const outcome = run.outcome;
   const copy = bannerCopy(run, outcome);
   const failed = outcome.classification === 'failed';
@@ -201,10 +202,8 @@ export default async function ReplayResultPage({
           </div>
           <div className="flex border border-line bg-panel flex-none">
             {classifications.map((classification) => {
-              const variant = runs.find(
-                (one) =>
-                  one.capabilityId === run.capabilityId &&
-                  one.outcome?.classification === classification,
+              const variant = allRuns.find(
+                (one) => one.outcome?.classification === classification,
               );
               const isActive = classification === outcome.classification;
               const className = `px-[11px] py-1.5 font-mono text-[11px] border-line first:border-l-0 border-l ${

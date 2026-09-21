@@ -19,6 +19,9 @@ playwright-report/
 /runs/
 /.artifacts/
 
+# Server-mode persistence (JSON files written by the NestJS server).
+/apps/server/data/
+
 .DS_Store
 *.log
 .idea/

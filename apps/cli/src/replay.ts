@@ -8,6 +8,7 @@ import { PlaywrightSurface } from '@understudy/surface';
 import { execute } from '@understudy/replay';
 import { redactRunLog } from '@understudy/redaction';
 import { defaultPolicy } from './policy.js';
+import { syncRunLog } from './server-sync.js';
 
 function parseCliArguments() {
   const { values, positionals } = parseArgs({
@@ -152,6 +153,7 @@ async function main(): Promise<void> {
 
     const runLogPath = args.outputPath ?? join(runDirectory, 'runlog.json');
     await writeFile(runLogPath, json + '\n', 'utf-8');
+    await syncRunLog(runLog);
     console.error(`Outcome: ${outcome}`);
     console.error(`Run log: ${runLogPath}`);
     console.error(`Screenshots: ${frames.length}`);

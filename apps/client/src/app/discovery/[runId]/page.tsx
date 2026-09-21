@@ -4,7 +4,7 @@ import { ActionClassChip } from '@/components/action-class-chip';
 import { Badge } from '@/components/badge';
 import { Button } from '@/components/button';
 import { Panel } from '@/components/panel';
-import { discoveryRun } from '@/fixtures';
+import { getDiscoveryRunByRunId } from '@/lib/data';
 import type { DiscoveryStep } from '@/types';
 
 const traceRows = ['observe', 'decide', 'act', 'policy'] as const;
@@ -94,8 +94,8 @@ export default async function DiscoveryTracePage({
   params: Promise<{ runId: string }>;
 }) {
   const { runId } = await params;
-  if (runId !== discoveryRun.runId) notFound();
-  const run = discoveryRun;
+  const run = await getDiscoveryRunByRunId(runId);
+  if (!run) notFound();
 
   return (
     <AppShell active="discovery">

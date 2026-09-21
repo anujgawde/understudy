@@ -1,6 +1,8 @@
 import { redirect } from 'next/navigation';
-import { runs } from '@/fixtures';
+import { getReplayRuns } from '@/lib/data';
 
-export default function ReplaysPage() {
-  redirect(`/replays/${runs[0].runId}`);
+export default async function ReplaysPage() {
+  const runs = await getReplayRuns();
+  if (runs.length === 0) redirect('/capabilities');
+  redirect(`/replays/${runs[0]!.runId}`);
 }

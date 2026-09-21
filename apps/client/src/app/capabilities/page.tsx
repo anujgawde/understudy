@@ -3,8 +3,8 @@ import { AppShell } from '@/components/app-shell';
 import { Badge } from '@/components/badge';
 import { MicroBadge } from '@/components/micro-badge';
 import { StabilityBar } from '@/components/stability-bar';
-import { capabilities, runs } from '@/fixtures';
-import type { Capability } from '@/types';
+import { getCapabilities, getReplayRuns } from '@/lib/data';
+import type { Capability, RunLog } from '@/types';
 
 const gridColumns = 'grid grid-cols-[minmax(0,2.1fr)_minmax(0,1.7fr)_74px_96px_92px] gap-4';
 
@@ -15,9 +15,7 @@ function signatureOf(capability: Capability) {
   return `(${inputNames}) → { ${outputNames} }`;
 }
 
-// A declared business outcome is the app answering correctly, so it counts as a
-// pass — only a `failed` run is the automation's own fault.
-function stabilityOf(capabilityId: string) {
+function stabilityOf(capabilityId: string, runs: RunLog[]) {
   const forCapability = runs.filter((run) => run.capabilityId === capabilityId);
   return {
     passed: forCapability.filter((run) => run.outcome?.classification !== 'failed').length,
@@ -25,8 +23,8 @@ function stabilityOf(capabilityId: string) {
   };
 }
 
-function CatalogRow({ capability }: { capability: Capability }) {
-  const stability = stabilityOf(capability.capabilityId);
+function CatalogRow({ capability, runs }: { capability: Capability; runs: RunLog[] }) {
+  const stability = stabilityOf(capability.capabilityId, runs);
 
   return (
     <Link
@@ -59,7 +57,8 @@ function CatalogRow({ capability }: { capability: Capability }) {
   );
 }
 
-export default function CapabilitiesPage() {
+export default async function CapabilitiesPage() {
+  const [capabilities, runs] = await Promise.all([getCapabilities(), getReplayRuns()]);
   const approvedCount = capabilities.filter((one) => one.status === 'approved').length;
   const draftCount = capabilities.length - approvedCount;
 
@@ -117,7 +116,7 @@ export default function CapabilitiesPage() {
         </div>
 
         {capabilities.map((capability) => (
-          <CatalogRow key={capability.capabilityId} capability={capability} />
+          <CatalogRow key={capability.capabilityId} capability={capability} runs={runs} />
         ))}
 
         <div className="mt-[22px] px-[17px] py-[15px] border border-dashed border-line bg-panel-head flex gap-[15px] items-start">

@@ -1,10 +1,11 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Subject, filter, map, type Observable } from 'rxjs';
 import { RunLog, RunLogEntry } from '@understudy/schemas';
+import { JsonStore } from '../json-store.js';
 
 @Injectable()
 export class RunsService {
-  private runLogs = new Map<string, RunLog>();
+  private store = new JsonStore<RunLog>('runs');
   private appended = new Subject<{ runId: string; entry: RunLogEntry }>();
 
   save(data: unknown): RunLog {
@@ -14,16 +15,16 @@ export class RunsService {
         parsed.error.issues.map((issue) => `${issue.path.join('.')}: ${issue.message}`),
       );
     }
-    this.runLogs.set(parsed.data.runId, parsed.data);
+    this.store.set(parsed.data.runId, parsed.data);
     return parsed.data;
   }
 
   findAll(): RunLog[] {
-    return [...this.runLogs.values()];
+    return this.store.all();
   }
 
   findOne(runId: string): RunLog {
-    const runLog = this.runLogs.get(runId);
+    const runLog = this.store.get(runId);
     if (!runLog) {
       throw new NotFoundException(`Run "${runId}" not found`);
     }
@@ -31,7 +32,7 @@ export class RunsService {
   }
 
   findByCapability(capabilityId: string): RunLog[] {
-    return [...this.runLogs.values()].filter((runLog) => runLog.capabilityId === capabilityId);
+    return this.store.all().filter((runLog) => runLog.capabilityId === capabilityId);
   }
 
   appendEntry(runId: string, data: unknown): RunLogEntry {
@@ -43,6 +44,7 @@ export class RunsService {
       );
     }
     runLog.entries.push(parsed.data);
+    this.store.set(runId, runLog);
     this.appended.next({ runId, entry: parsed.data });
     return parsed.data;
   }
