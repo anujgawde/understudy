@@ -154,7 +154,9 @@ export async function discover(options: DiscoveryOptions): Promise<DiscoveryResu
   let stepCount = 0;
   let finishPayload: FinishPayload | null = null;
 
-  // Initial observation
+  // Initial observation. The browser opens on about:blank, so this is the state
+  // before anyone has gone anywhere — logged because the navigate below is a
+  // replayable step, and distillation needs the observation it acted from.
   const initialObservation = await surface.observe();
   addEntry({
     entryType: 'observation',
@@ -164,9 +166,32 @@ export async function discover(options: DiscoveryOptions): Promise<DiscoveryResu
     observation: initialObservation,
   });
 
+  // Getting to the start URL is not a decision worth a model call, and leaving it
+  // to the model meant the first thing we ever told it was false: it was sitting
+  // on about:blank while being informed it had arrived.
+  const openingAction: Action = { actionType: 'navigate', url: startUrl };
+  await surface.act(openingAction, { waitUntil: 'pageLoad' });
+  addEntry({
+    entryType: 'action',
+    sequence: sequence++,
+    occurredAt: new Date().toISOString(),
+    actor: 'system',
+    action: openingAction,
+    succeeded: true,
+  });
+
+  const startObservation = await surface.observe();
+  addEntry({
+    entryType: 'observation',
+    sequence: sequence++,
+    occurredAt: new Date().toISOString(),
+    actor: 'system',
+    observation: startObservation,
+  });
+
   messages.push({
     role: 'user',
-    content: `I have navigated to the starting page. Here is the initial observation:\n\n${formatObservation(initialObservation)}`,
+    content: `I have navigated to the starting page. Here is the initial observation:\n\n${formatObservation(startObservation)}`,
   });
 
   while (stepCount < maxSteps && finishPayload === null) {

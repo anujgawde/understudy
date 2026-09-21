@@ -32,6 +32,16 @@ function makeSurface(): Surface {
   };
 }
 
+// discover() always opens by navigating to startUrl itself, so every count here
+// is of what the model did afterwards — the opening navigate is not its doing.
+function modelActionCalls(surface: Surface): unknown[] {
+  return vi.mocked(surface.act).mock.calls.slice(1);
+}
+
+function modelActionEntries(runLog: { entries: { entryType: string; actor: string }[] }) {
+  return runLog.entries.filter((e) => e.entryType === 'action' && e.actor === 'model');
+}
+
 function makeModelProvider(turns: ModelTurn[]): ModelProvider {
   let callIndex = 0;
   return {
@@ -102,11 +112,11 @@ describe('policy enforcement during discovery', () => {
     expect(policyEntries[0]!.decision).toBe('deny');
     expect(policyEntries[0]!.reason).toContain('outside the allowed origins');
 
-    const actionEntries = runLog.entries.filter((e) => e.entryType === 'action');
+    const actionEntries = modelActionEntries(runLog);
     expect(actionEntries).toHaveLength(1);
     expect(actionEntries[0]!.succeeded).toBe(false);
 
-    expect(surface.act).not.toHaveBeenCalled();
+    expect(modelActionCalls(surface)).toHaveLength(0);
   });
 
   test('mutating action with confirm policy and no callback is denied', async () => {
@@ -132,11 +142,11 @@ describe('policy enforcement during discovery', () => {
     expect(policyEntries).toHaveLength(1);
     expect(policyEntries[0]!.decision).toBe('confirm');
 
-    const actionEntries = runLog.entries.filter((e) => e.entryType === 'action');
+    const actionEntries = modelActionEntries(runLog);
     expect(actionEntries).toHaveLength(1);
     expect(actionEntries[0]!.succeeded).toBe(false);
 
-    expect(surface.act).not.toHaveBeenCalled();
+    expect(modelActionCalls(surface)).toHaveLength(0);
   });
 
   test('mutating action with confirm policy and rejected callback is denied', async () => {
@@ -167,11 +177,11 @@ describe('policy enforcement during discovery', () => {
       reason: expect.stringContaining('confirm'),
     });
 
-    const actionEntries = runLog.entries.filter((e) => e.entryType === 'action');
+    const actionEntries = modelActionEntries(runLog);
     expect(actionEntries).toHaveLength(1);
     expect(actionEntries[0]!.succeeded).toBe(false);
 
-    expect(surface.act).not.toHaveBeenCalled();
+    expect(modelActionCalls(surface)).toHaveLength(0);
   });
 
   test('mutating action with confirm policy and approved callback proceeds', async () => {
@@ -197,11 +207,11 @@ describe('policy enforcement during discovery', () => {
 
     expect(onConfirmAction).toHaveBeenCalledOnce();
 
-    const actionEntries = runLog.entries.filter((e) => e.entryType === 'action');
+    const actionEntries = modelActionEntries(runLog);
     expect(actionEntries).toHaveLength(1);
     expect(actionEntries[0]!.succeeded).toBe(true);
 
-    expect(surface.act).toHaveBeenCalledOnce();
+    expect(modelActionCalls(surface)).toHaveLength(1);
   });
 
   test('read actions are allowed without confirmation', async () => {
@@ -231,7 +241,7 @@ describe('policy enforcement during discovery', () => {
     expect(policyEntries).toHaveLength(1);
     expect(policyEntries[0]!.decision).toBe('allow');
 
-    expect(surface.act).toHaveBeenCalledOnce();
+    expect(modelActionCalls(surface)).toHaveLength(1);
   });
 
   test('allowed-origin navigation proceeds without confirmation', async () => {
@@ -256,6 +266,6 @@ describe('policy enforcement during discovery', () => {
     });
 
     expect(onConfirmAction).not.toHaveBeenCalled();
-    expect(surface.act).toHaveBeenCalledOnce();
+    expect(modelActionCalls(surface)).toHaveLength(1);
   });
 });
