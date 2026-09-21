@@ -10,6 +10,19 @@
       "valueType": "string",
       "required": true,
       "description": "Member number as printed on the card"
+    },
+    {
+      "name": "operatorUserId",
+      "valueType": "string",
+      "required": true,
+      "description": "Teller sign-on user id"
+    },
+    {
+      "name": "operatorPassword",
+      "valueType": "string",
+      "required": true,
+      "description": "Teller sign-on password",
+      "secret": true
     }
   ],
   "outputs": [
@@ -49,7 +62,7 @@
       "stepId": "submit-login",
       "action": {
         "actionType": "click",
-        "target": [{ "strategy": "role", "role": "button", "accessibleName": "Sign On" }]
+        "target": [{ "strategy": "role", "role": "button", "accessibleName": "Sign In" }]
       },
       "waitFor": { "waitUntil": "textPresent", "text": "Member Search" }
     },
@@ -58,8 +71,8 @@
       "action": {
         "actionType": "fill",
         "target": [
-          { "strategy": "adjacent", "labelText": "Member Number", "direction": "next", "targetRole": "textbox" },
-          { "strategy": "css", "selector": "#ctl00_ContentMain_txtMemberNo" }
+          { "strategy": "adjacent", "labelText": "Member No", "direction": "next", "targetRole": "textbox" },
+          { "strategy": "css", "selector": "#ctl00_ContentMain_txtMbrNo" }
         ],
         "value": "{{memberNumber}}"
       }
@@ -74,12 +87,16 @@
     },
     {
       "stepId": "open-member-detail",
-      "description": "The results grid posts a form rather than linking, so this must be a click",
+      "description": "The results grid posts a form rather than linking, so this must be a click. The row is addressed by position because the only value that identifies it is the member number, and replay substitutes inputs into actions, not into locators",
       "action": {
         "actionType": "click",
         "target": [
-          { "strategy": "text", "text": "{{memberNumber}}", "matchExactly": true },
-          { "strategy": "css", "selector": "#ctl00_ContentMain_gridResults tr.selected td a" }
+          {
+            "strategy": "css",
+            "selector": "#ctl00_ContentMain_grdResults tbody tr td:nth-child(2) a",
+            "matchIndex": 0
+          },
+          { "strategy": "css", "selector": ".ctl00_Grid tbody a", "matchIndex": 0 }
         ]
       },
       "waitFor": { "waitUntil": "textPresent", "text": "Share Summary" }
@@ -101,7 +118,7 @@
         { "assert": "text_present", "text": "Share Summary" },
         {
           "assert": "element_present",
-          "target": [{ "strategy": "text", "text": "Regular Savings" }]
+          "target": [{ "strategy": "text", "text": "Regular Share Savings" }]
         }
       ]
     }
@@ -110,16 +127,16 @@
     {
       "outputName": "memberName",
       "target": [
-        { "strategy": "adjacent", "labelText": "Member Name", "direction": "next" },
-        { "strategy": "css", "selector": "#ctl00_ContentMain_lblMemberName" }
+        { "strategy": "adjacent", "labelText": "Name", "direction": "next" },
+        { "strategy": "css", "selector": ".ctl00_MemberInfo tr:nth-child(1) td:nth-child(4)" }
       ],
       "valueType": "string"
     },
     {
       "outputName": "savingsBalance",
       "target": [
-        { "strategy": "adjacent", "labelText": "Regular Savings", "direction": "next" },
-        { "strategy": "css", "selector": "#ctl00_ContentMain_gridShares tr:nth-child(1) td:nth-child(3)" }
+        { "strategy": "adjacent", "labelText": "Regular Share Savings", "direction": "next" },
+        { "strategy": "css", "selector": "#ctl00_ContentMain_grdShares tbody tr:nth-child(1) td:nth-child(3)" }
       ],
       "valueType": "number"
     }
