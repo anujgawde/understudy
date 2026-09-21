@@ -60,11 +60,15 @@ export class OllamaProvider implements ModelProvider {
 
     const body = (await response.json()) as OllamaChatResponse;
 
-    const toolCalls: ToolCall[] = (body.message?.tool_calls ?? []).map((call, index) => ({
+    let toolCalls: ToolCall[] = (body.message?.tool_calls ?? []).map((call, index) => ({
       toolCallId: `ollama-${index}-${call.function.name}`,
       toolName: call.function.name,
       input: call.function.arguments ?? {},
     }));
+
+    if (toolCalls.length === 0 && body.message?.content) {
+      toolCalls = parseToolCallsFromContent(body.message.content, options.tools);
+    }
 
     let stopReason: ModelTurn['stopReason'];
     if (toolCalls.length > 0) {
@@ -82,6 +86,73 @@ export class OllamaProvider implements ModelProvider {
       inputTokens: body.prompt_eval_count ?? 0,
       outputTokens: body.eval_count ?? 0,
     };
+  }
+}
+
+
+// Small models routinely announce a tool call as prose in `content` rather than
+// filling Ollama's structured tool_calls channel. llama3.1 does this on every
+// turn: the decision is right and the JSON is well formed, and without reading
+// it here the run spends its whole step budget being told it called nothing.
+function parseToolCallsFromContent(content: string, tools: ToolDefinition[]): ToolCall[] {
+  const offered = new Set(tools.map((tool) => tool.name));
+  const calls: ToolCall[] = [];
+
+  for (const candidate of jsonObjectsIn(content)) {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(candidate);
+    } catch {
+      continue;
+    }
+
+    if (typeof parsed !== 'object' || parsed === null) continue;
+    const record = parsed as { name?: unknown; parameters?: unknown; arguments?: unknown };
+    // Only a name the model was actually offered counts. Without this, a model
+    // quoting a JSON example in its reasoning would be executed.
+    if (typeof record.name !== 'string' || !offered.has(record.name)) continue;
+
+    const input = record.parameters ?? record.arguments ?? {};
+    calls.push({
+      toolCallId: `ollama-content-${calls.length}-${record.name}`,
+      toolName: record.name,
+      input: typeof input === 'object' && input !== null ? (input as Record<string, unknown>) : {},
+    });
+  }
+
+  return calls;
+}
+
+// Yields every brace-balanced span, so a call embedded in a sentence or fenced
+// in a code block is found without having to parse either.
+function* jsonObjectsIn(text: string): Generator<string> {
+  for (let start = 0; start < text.length; start++) {
+    if (text[start] !== '{') continue;
+
+    let depth = 0;
+    let inString = false;
+    let escaped = false;
+
+    for (let end = start; end < text.length; end++) {
+      const character = text[end]!;
+
+      if (escaped) {
+        escaped = false;
+      } else if (character === '\\') {
+        escaped = true;
+      } else if (character === '"') {
+        inString = !inString;
+      } else if (!inString && character === '{') {
+        depth++;
+      } else if (!inString && character === '}') {
+        depth--;
+        if (depth === 0) {
+          yield text.slice(start, end + 1);
+          start = end;
+          break;
+        }
+      }
+    }
   }
 }
 
