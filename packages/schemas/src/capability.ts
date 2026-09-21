@@ -83,8 +83,8 @@ export const Capability = z
       })
       .optional(),
   })
-  // Cross-field integrity. Both of these would otherwise surface mid-replay as
-  // a confusing runtime error rather than as a malformed artifact.
+  // Cross-field integrity. These would otherwise surface mid-replay as a
+  // confusing runtime error rather than as a malformed artifact.
   .superRefine((capability, context) => {
     const declaredOutputs = new Set(capability.outputs.map((output) => output.name));
     capability.extractions.forEach((extraction, index) => {
@@ -125,6 +125,45 @@ export const Capability = z
           code: 'custom',
           path: ['businessOutcomes', index, 'condition', 'checkpointId'],
           message: `business outcome references checkpoint "${rule.condition.checkpointId}", which is not a checkpoint in this capability`,
+        });
+      }
+    });
+
+    // Replay resolves "{{name}}" in navigate urls and fill values and nowhere
+    // else, so a placeholder fails in two different ways. Named input that was
+    // never declared: nothing can supply it. Placeholder in a locator or a wait
+    // condition: it is matched against the page verbatim and never resolves.
+    const inputPlaceholder = /\{\{(\w+)\}\}/g;
+    const declaredInputs = new Set(capability.inputs.map((input) => input.name));
+
+    capability.steps.forEach((step, index) => {
+      const substituted =
+        step.action.actionType === 'navigate'
+          ? step.action.url
+          : step.action.actionType === 'fill'
+            ? step.action.value
+            : '';
+
+      for (const match of substituted.matchAll(inputPlaceholder)) {
+        const inputName = match[1]!;
+        if (!declaredInputs.has(inputName)) {
+          context.addIssue({
+            code: 'custom',
+            path: ['steps', index, 'action'],
+            message: `step "${step.stepId}" uses "{{${inputName}}}", which is not a declared input`,
+          });
+        }
+      }
+
+      const leftLiteral = JSON.stringify([
+        'target' in step.action ? step.action.target : null,
+        step.waitFor ?? null,
+      ]);
+      for (const match of leftLiteral.matchAll(inputPlaceholder)) {
+        context.addIssue({
+          code: 'custom',
+          path: ['steps', index],
+          message: `step "${step.stepId}" carries "{{${match[1]!}}}" in a locator or wait condition, where replay does not substitute inputs`,
         });
       }
     });

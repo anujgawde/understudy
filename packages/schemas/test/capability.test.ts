@@ -54,4 +54,43 @@ describe('Capability', () => {
     expect(result.success).toBe(false);
     expect(result.error?.issues[0]?.message).toContain('not a step in this capability');
   });
+
+  it('rejects a step that fills a placeholder naming no declared input', () => {
+    const invalid = {
+      ...(exampleArtifact as Record<string, unknown>),
+      checkpoints: [],
+      steps: [
+        {
+          stepId: 'fill-unknown',
+          action: {
+            actionType: 'fill',
+            target: [{ strategy: 'css', selector: '#anything' }],
+            value: '{{nowhereDeclared}}',
+          },
+        },
+      ],
+    };
+    const result = Capability.safeParse(invalid);
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0]?.message).toContain('not a declared input');
+  });
+
+  it('rejects a placeholder in a locator, which replay never substitutes', () => {
+    const invalid = {
+      ...(exampleArtifact as Record<string, unknown>),
+      checkpoints: [],
+      steps: [
+        {
+          stepId: 'click-by-input',
+          action: {
+            actionType: 'click',
+            target: [{ strategy: 'text', text: '{{memberNumber}}' }],
+          },
+        },
+      ],
+    };
+    const result = Capability.safeParse(invalid);
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0]?.message).toContain('does not substitute inputs');
+  });
 });
