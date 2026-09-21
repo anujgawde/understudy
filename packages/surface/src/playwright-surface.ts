@@ -29,7 +29,16 @@ export class PlaywrightSurface implements Surface {
     ]);
 
     let screenshotPath: string | undefined;
-    if (this.screenshotDirectory) {
+    // about:blank has nothing to capture, and a white rectangle in the evidence
+    // folder is worse than no file at all.
+    if (this.screenshotDirectory && url !== 'about:blank') {
+      // Discovery re-observes straight after acting, with no wait condition. A
+      // click that navigated has torn down the old document and not yet painted
+      // the new one, so without settling first the capture comes out blank.
+      await this.page
+        .waitForLoadState('load', { timeout: 5_000 })
+        .catch(() => undefined);
+
       await mkdir(this.screenshotDirectory, { recursive: true });
       const filename = `observe-${Date.now()}.png`;
       screenshotPath = join(this.screenshotDirectory, filename);
