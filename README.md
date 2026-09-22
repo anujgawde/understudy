@@ -58,6 +58,38 @@ npm run task "look up member 67890 and read the savings balance"
 Any user id and password are accepted by the target app's login, so `--input password=anything`
 is fine.
 
+### Configuration
+
+Copy `.env.example` to `.env` and fill in only what you need. A replay needs
+nothing at all; discovery needs one model key.
+
+| Variable | What it does |
+| -------- | ------------ |
+| `GEMINI_API_KEY` | Discovery's default provider. `ANTHROPIC_API_KEY` or a local `OLLAMA_HOST` work instead. |
+| `TARGET_APP_PORT` | Where the target application listens (default `4000`). |
+| `SERVER_PORT` | Where the NestJS server listens (default `4001`). |
+| `UNDERSTUDY_SERVER_URL` | Set it and the CLI also posts its runs, capabilities, policies and interventions to that server. Unset, everything stays on disk. |
+| `NEXT_PUBLIC_API_URL` | Set it and the console reads from that server. Unset, it reads `evidence/` from disk. |
+| `EVIDENCE_DIR` | Where the console looks for evidence in standalone mode (default `evidence/`). |
+| `DATA_DIR` | Where the server persists what it is sent (default `apps/server/data/`). |
+
+### Server mode
+
+Optional, and the two halves are independent — you can point the CLI at a
+server without pointing the console at it, or the reverse.
+
+```bash
+npm run dev --workspace @understudy/server     # http://localhost:4001
+
+UNDERSTUDY_SERVER_URL=http://localhost:4001 npm run replay <artifact> -- --input ...
+NEXT_PUBLIC_API_URL=http://localhost:4001 npm run dev --workspace @understudy/client
+```
+
+The server persists capabilities, runs, policies and interventions to
+`apps/server/data/`, so its inbox survives a restart. If the CLI cannot reach
+it the run still completes and the evidence still lands on disk — the failure
+is reported as `NOT SYNCED` rather than swallowed.
+
 ### Running it without a model
 
 `replay` never calls a model, so the whole error taxonomy can be walked with no API key set at
