@@ -9,17 +9,64 @@ import type {
   ObservedElement,
   WaitCondition,
 } from '@understudy/schemas';
-import type { PlaywrightSurfaceOptions, ResolveResult, Surface } from './types.js';
+import type {
+  CapturedDialog,
+  PlaywrightSurfaceOptions,
+  ResolveResult,
+  Surface,
+} from './types.js';
 import { collectPageElements } from './enrichment.js';
+import { markRedactedElements } from './masking.js';
+
+const MASK_ATTRIBUTE = 'data-understudy-mask';
 
 export class PlaywrightSurface implements Surface {
   private page: Page;
   private screenshotDirectory: string | undefined;
+  private redactedFieldNames: string[];
   private observationCount = 0;
+  private dialogs: CapturedDialog[] = [];
+  private documentStatus: number | undefined;
 
   constructor(page: Page, options?: PlaywrightSurfaceOptions) {
     this.page = page;
     this.screenshotDirectory = options?.screenshotDirectory;
+    this.redactedFieldNames = options?.redactedFieldNames ?? [];
+
+    // Without a listener Playwright dismisses dialogs itself and tells nobody,
+    // which is precisely the silent-proceed the brief asks replay not to do.
+    // Dismissing is still the right answer — accepting one would confirm
+    // something no artifact declared — but it is recorded either way.
+    this.page.on('dialog', (dialog) => {
+      this.dialogs.push({
+        kind: dialog.type(),
+        message: dialog.message(),
+        capturedAt: new Date().toISOString(),
+      });
+      void dialog.dismiss().catch(() => undefined);
+    });
+
+    this.page.on('response', (response) => {
+      if (response.request().isNavigationRequest() && response.frame() === this.page.mainFrame()) {
+        this.documentStatus = response.status();
+      }
+    });
+  }
+
+  async drainDialogs(): Promise<CapturedDialog[]> {
+    // A round trip to the page, purely for its ordering: the dialog event was
+    // queued when the action fired, and this cannot come back before that has
+    // been delivered. A dialog currently open does not deadlock it, because the
+    // handler above dismisses on arrival.
+    await this.page.evaluate(() => true).catch(() => undefined);
+
+    const captured = this.dialogs;
+    this.dialogs = [];
+    return captured;
+  }
+
+  lastResponseStatus(): number | undefined {
+    return this.documentStatus;
   }
 
   async observe(): Promise<Observation> {
@@ -46,7 +93,13 @@ export class PlaywrightSurface implements Surface {
       // came out as observe-[redacted].png and resolved to nothing.
       const filename = `observe-${String(this.observationCount++).padStart(3, '0')}.png`;
       screenshotPath = join(this.screenshotDirectory, filename);
-      await this.page.screenshot({ path: screenshotPath, fullPage: true });
+
+      const masked = await this.markMaskTargets();
+      await this.page.screenshot({
+        path: screenshotPath,
+        fullPage: true,
+        ...(masked && { mask: [this.page.locator(`[${MASK_ATTRIBUTE}]`)] }),
+      });
     }
 
     return {
@@ -244,6 +297,32 @@ export class PlaywrightSurface implements Surface {
 
     if (!found) return null;
     return this.page.locator(`[data-understudy-act-target="${tempMarker}"]`);
+  }
+
+  // Covers the values a policy calls sensitive before the frame is written.
+  // Returns false when nothing matched, so the screenshot is taken without a
+  // mask locator rather than with one that resolves to nothing.
+  private async markMaskTargets(): Promise<boolean> {
+    return this.page
+      .evaluate(markRedactedElements, {
+        fieldNames: this.redactedFieldNames,
+        attribute: MASK_ATTRIBUTE,
+      })
+      .catch(() => false);
+  }
+
+  /**
+   * A frame with the same values covered as an observation's. Replay photographs
+   * the page itself rather than observing it, and taking that shot through the
+   * surface is what stops the evidence path from being the one place redaction
+   * does not reach.
+   */
+  async screenshot(): Promise<Buffer> {
+    const masked = await this.markMaskTargets();
+    return this.page.screenshot({
+      fullPage: true,
+      ...(masked && { mask: [this.page.locator(`[${MASK_ATTRIBUTE}]`)] }),
+    });
   }
 
   async pageUrl(): Promise<string> {

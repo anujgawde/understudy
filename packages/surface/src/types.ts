@@ -6,6 +6,12 @@ export interface ResolveResult {
   matchCount: number;
 }
 
+export interface CapturedDialog {
+  kind: string;
+  message: string;
+  capturedAt: string;
+}
+
 export interface Surface {
   observe(): Promise<Observation>;
   act(action: Action, waitCondition?: WaitCondition): Promise<void>;
@@ -13,6 +19,20 @@ export interface Surface {
   extractText(ladder: LocatorLadder): Promise<{ text: string; resolveResult: ResolveResult }>;
   pageUrl(): Promise<string>;
   hasText(text: string): Promise<boolean>;
+  // Native dialogs block the page until something answers them, so they are
+  // dismissed as they arrive and collected here. Draining returns what appeared
+  // since the last drain and clears the buffer, so each step is judged only on
+  // the dialogs it actually raised.
+  //
+  // Async because the dialog event races the action that triggered it: the
+  // implementation flushes the browser's event queue first, so a dialog raised
+  // by the step just taken is delivered before this returns rather than landing
+  // in the next step's buffer.
+  drainDialogs(): Promise<CapturedDialog[]>;
+  // The status of the last document response. A 5xx is the one runtime error
+  // that no assertion about page content can tell you about reliably, because
+  // the error page renders perfectly well.
+  lastResponseStatus(): number | undefined;
 }
 
 export interface RawObservedElement {
@@ -30,6 +50,10 @@ export interface RawObservedElement {
 
 export interface PlaywrightSurfaceOptions {
   screenshotDirectory?: string;
+  // Field names whose on-screen values are covered before a screenshot is
+  // written. Screenshots are the one evidence artifact redaction at the log
+  // boundary never sees, so the masking has to happen at capture time.
+  redactedFieldNames?: string[];
 }
 
 export interface ScreencastOptions {

@@ -1,4 +1,5 @@
 export type {
+  CapturedDialog,
   PlaywrightSurfaceOptions,
   ResolveResult,
   ScreencastOptions,
