@@ -215,6 +215,11 @@ async function main(): Promise<void> {
     await mkdir(discoveryDirectory, { recursive: true });
     const runLogPath = join(discoveryDirectory, 'runlog.json');
     await writeFile(runLogPath, JSON.stringify(runLog, null, 2) + '\n', 'utf-8');
+    await writeFile(
+      join(discoveryDirectory, 'policy.json'),
+      JSON.stringify(policy, null, 2) + '\n',
+      'utf-8',
+    );
     await syncRunLog(runLog);
 
     console.error('');

@@ -115,10 +115,10 @@ async function main(): Promise<void> {
       inputs: args.inputs,
       runId,
       session: { registry, sessionId },
+      // A bare filename, so a copied evidence folder still resolves it.
       captureFailureFrame: async () => {
-        const path = join(runDirectory, 'intervention.png');
-        await writeFile(path, await surface.screenshot());
-        return path;
+        await writeFile(join(runDirectory, 'intervention.png'), await surface.screenshot());
+        return 'intervention.png';
       },
     });
 
@@ -189,6 +189,16 @@ async function main(): Promise<void> {
     await writeFile(
       join(runDirectory, 'runlog.json'),
       JSON.stringify(redactRunLog(resumed, redactionPolicy), null, 2) + '\n',
+      'utf-8',
+    );
+    await writeFile(
+      join(runDirectory, 'intervention.json'),
+      JSON.stringify(intervention, null, 2) + '\n',
+      'utf-8',
+    );
+    await writeFile(
+      join(runDirectory, 'policy.json'),
+      JSON.stringify(redactionPolicy, null, 2) + '\n',
       'utf-8',
     );
     await writeFile(

@@ -6,6 +6,7 @@ import type { Policy } from '@understudy/schemas';
 import { Capability } from '@understudy/schemas';
 import { PlaywrightSurface } from '@understudy/surface';
 import { execute } from '@understudy/replay';
+import { SessionRegistry } from '@understudy/session';
 import { redactRunLog } from '@understudy/redaction';
 import { defaultPolicy } from './policy.js';
 import { syncRunLog } from './server-sync.js';
@@ -127,16 +128,34 @@ async function main(): Promise<void> {
   try {
     const runId = crypto.randomUUID();
 
+    // A replay is a session, even when nobody is watching it. Without one the
+    // executor has nowhere to raise an intervention, so this path could never
+    // escalate — the escalation machinery existed and the main replay command
+    // was the one caller that could not reach it.
+    const registry = new SessionRegistry();
+    const sessionId = `replay-${runId}`;
+    registry.create(sessionId);
+    registry.startRun(sessionId, runId, capability.capabilityId);
+
     // Replay never observes — that is the point of it — so nothing photographs
     // the page on its own. Each recorded entry is one, taken while the page is
     // still in the state that produced it.
     const frames: Buffer[] = [];
-    const { runLog: recordedRunLog } = await execute({
+    let failureFrame: Buffer | undefined;
+    const { runLog: recordedRunLog, intervention } = await execute({
       capability,
       surface,
       inputs: args.inputs,
       runId,
+      session: { registry, sessionId },
       approveIrreversible: args.approveIrreversible,
+      // Held in memory: the run directory is named after the outcome, which is
+      // not known until the run ends. Recorded as a bare filename rather than
+      // an absolute path so a copied evidence folder still resolves.
+      captureFailureFrame: async () => {
+        failureFrame = await surface.screenshot();
+        return 'intervention.png';
+      },
       async onEntry(entry) {
         if (entry.entryType !== 'action' && entry.entryType !== 'assertion') return;
         frames.push(await surface.screenshot());
@@ -169,6 +188,30 @@ async function main(): Promise<void> {
 
     const runLogPath = args.outputPath ?? join(runDirectory, 'runlog.json');
     await writeFile(runLogPath, json + '\n', 'utf-8');
+
+    // The policy that actually governed this run, written beside it. A policy
+    // described in a document is a claim; one saved next to the run it shaped
+    // is the record of what was in force at the time.
+    await writeFile(
+      join(runDirectory, 'policy.json'),
+      JSON.stringify(redactionPolicy, null, 2) + '\n',
+      'utf-8',
+    );
+
+    // An intervention is the system reporting that it stopped and why. Leaving
+    // it in memory meant the escalation path produced its most useful artifact
+    // and then dropped it on the floor.
+    if (intervention) {
+      if (failureFrame) {
+        await writeFile(join(runDirectory, 'intervention.png'), failureFrame);
+      }
+      await writeFile(
+        join(runDirectory, 'intervention.json'),
+        JSON.stringify(intervention, null, 2) + '\n',
+        'utf-8',
+      );
+      console.error(`Intervention: ${join(runDirectory, 'intervention.json')}`);
+    }
     await syncRunLog(runLog);
     console.error(`Outcome: ${outcome}`);
     console.error(`Run log: ${runLogPath}`);
