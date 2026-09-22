@@ -65,7 +65,7 @@ describe('OperatorTakeover', () => {
 
   test('streams base64 JPEG frames of the live page', async () => {
     await page.goto(`${BASE_URL}/login`);
-    const takeover = new OperatorTakeover(page);
+    const takeover = new OperatorTakeover(page, { hasControl: () => true });
     const frames: ScreencastFrame[] = [];
 
     await takeover.startScreencast((frame) => {
@@ -85,7 +85,7 @@ describe('OperatorTakeover', () => {
 
   test('keeps acking so frames continue past the first', async () => {
     await page.goto(`${BASE_URL}/login`);
-    const takeover = new OperatorTakeover(page);
+    const takeover = new OperatorTakeover(page, { hasControl: () => true });
     const frames: ScreencastFrame[] = [];
 
     await takeover.startScreencast((frame) => {
@@ -109,7 +109,7 @@ describe('OperatorTakeover', () => {
 
   test('starting twice throws', async () => {
     await page.goto(`${BASE_URL}/login`);
-    const takeover = new OperatorTakeover(page);
+    const takeover = new OperatorTakeover(page, { hasControl: () => true });
 
     await takeover.startScreencast(() => {});
     await expect(takeover.startScreencast(() => {})).rejects.toThrow('already running');
@@ -117,13 +117,13 @@ describe('OperatorTakeover', () => {
   }, 30_000);
 
   test('stopping without starting is a no-op', async () => {
-    const takeover = new OperatorTakeover(page);
+    const takeover = new OperatorTakeover(page, { hasControl: () => true });
     await expect(takeover.stopScreencast()).resolves.toBeUndefined();
   }, 30_000);
 
   test('can restart after stopping', async () => {
     await page.goto(`${BASE_URL}/login`);
-    const takeover = new OperatorTakeover(page);
+    const takeover = new OperatorTakeover(page, { hasControl: () => true });
 
     await takeover.startScreencast(() => {});
     await takeover.stopScreencast();
@@ -133,7 +133,7 @@ describe('OperatorTakeover', () => {
 
   test('forwards typing and clicks into the same page', async () => {
     await page.goto(`${BASE_URL}/login`);
-    const takeover = new OperatorTakeover(page);
+    const takeover = new OperatorTakeover(page, { hasControl: () => true });
 
     const userIdInput = page.locator('input[type="text"]').first();
     const box = await userIdInput.boundingBox();
@@ -153,7 +153,7 @@ describe('OperatorTakeover', () => {
 
   test('forwards key presses', async () => {
     await page.goto(`${BASE_URL}/login`);
-    const takeover = new OperatorTakeover(page);
+    const takeover = new OperatorTakeover(page, { hasControl: () => true });
 
     const userIdInput = page.locator('input[type="text"]').first();
     await userIdInput.fill('abc');
@@ -166,7 +166,7 @@ describe('OperatorTakeover', () => {
 
   test('operator input lands in the same context the run was using', async () => {
     await page.goto(`${BASE_URL}/login`);
-    const takeover = new OperatorTakeover(page);
+    const takeover = new OperatorTakeover(page, { hasControl: () => true });
 
     await takeover.dispatch({ inputType: 'mouse_move', x: 5, y: 5 });
     await takeover.dispatch({ inputType: 'scroll', x: 5, y: 5, deltaX: 0, deltaY: 100 });
@@ -175,4 +175,27 @@ describe('OperatorTakeover', () => {
     expect(page.url()).toContain('/login');
     expect(browser.contexts()).toHaveLength(1);
   }, 30_000);
+
+  test('input is refused when the operator does not hold the session', async () => {
+    // The whole point of the control token: a human and the automation must
+    // never be typing into the same page at the same time.
+    const takeover = new OperatorTakeover(page, { hasControl: () => false });
+
+    await expect(takeover.dispatch({ inputType: 'type_text', text: 'hello' })).rejects.toThrow(
+      /not handed off/,
+    );
+  });
+
+  test('each dispatched input is reported to the caller', async () => {
+    const seen: string[] = [];
+    const takeover = new OperatorTakeover(page, {
+      hasControl: () => true,
+      onInput: (input) => seen.push(input.inputType),
+    });
+
+    await takeover.dispatch({ inputType: 'type_text', text: 'hi' });
+    await takeover.dispatch({ inputType: 'key_press', key: 'Enter' });
+
+    expect(seen).toEqual(['type_text', 'key_press']);
+  });
 });

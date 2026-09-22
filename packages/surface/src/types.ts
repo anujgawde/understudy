@@ -1,4 +1,11 @@
-import type { Action, Locator, LocatorLadder, Observation, WaitCondition } from '@understudy/schemas';
+import type {
+  Action,
+  Locator,
+  LocatorLadder,
+  Observation,
+  OperatorInput,
+  WaitCondition,
+} from '@understudy/schemas';
 
 export interface ResolveResult {
   rungIndex: number;
@@ -58,6 +65,26 @@ export interface PlaywrightSurfaceOptions {
   // written. Screenshots are the one evidence artifact redaction at the log
   // boundary never sees, so the masking has to happen at capture time.
   redactedFieldNames?: string[];
+}
+
+export interface OperatorTakeoverOptions {
+  /**
+   * Whether the operator may drive the page right now. Asked on every input,
+   * not once at the start, because control can be handed back mid-session and
+   * a stale answer would let an operator type into a run the system has already
+   * resumed.
+   *
+   * A function rather than a flag so the takeover reads the session's live
+   * state instead of holding a copy of it, and so this package stays free of a
+   * dependency on the session registry.
+   */
+  hasControl: () => boolean;
+  /**
+   * Called for each input the operator dispatches. The brief asks for the
+   * human's actions to be captured; this is the hook the caller hangs the
+   * ledger on.
+   */
+  onInput?: (input: OperatorInput) => void;
 }
 
 export interface ScreencastOptions {

@@ -22,6 +22,7 @@ export const LedgerEntry = z.object({
     'intervention_raised',
     'handed_off',
     'handed_back',
+    'operator_input',
     'run_resumed',
     'run_completed',
   ]),
@@ -48,6 +49,11 @@ export const Intervention = z.object({
     runId: z.string().min(1),
     capabilityId: z.string().min(1).optional(),
     pageUrl: z.string().optional(),
+    // The brief asks an intervention to carry the current state or a
+    // screenshot. A URL says where the run stopped; the frame says what the
+    // operator is about to be handed, which is what makes the inbox usable
+    // without opening the session first.
+    screenshotPath: z.string().min(1).optional(),
     lastSuccessfulStepId: z.string().min(1).optional(),
   }),
 });
@@ -73,6 +79,7 @@ export interface RaiseInterventionOptions {
   lastSuccessfulStepId?: string;
   message: string;
   pageUrl?: string;
+  screenshotPath?: string;
 }
 
 /**

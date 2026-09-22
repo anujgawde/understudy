@@ -1,13 +1,15 @@
 import type { CDPSession, Page } from 'playwright';
 import type { OperatorInput, ScreencastFrame } from '@understudy/schemas';
-import type { ScreencastOptions } from './types.js';
+import type { OperatorTakeoverOptions, ScreencastOptions } from './types.js';
 
 export class OperatorTakeover {
   private page: Page;
+  private options: OperatorTakeoverOptions;
   private cdpSession: CDPSession | undefined;
 
-  constructor(page: Page) {
+  constructor(page: Page, options: OperatorTakeoverOptions) {
     this.page = page;
+    this.options = options;
   }
 
   async startScreencast(
@@ -53,7 +55,19 @@ export class OperatorTakeover {
     this.cdpSession = undefined;
   }
 
+  /**
+   * Refuses unless the operator actually holds the session. The control token
+   * existed from the start and this path never consulted it, which meant input
+   * aimed at a paused session would land just as happily in a running one —
+   * the automation and a human typing into the same page at the same time.
+   */
   async dispatch(input: OperatorInput): Promise<void> {
+    if (!this.options.hasControl()) {
+      throw new Error('Operator input refused: this session is not handed off to an operator');
+    }
+
+    this.options.onInput?.(input);
+
     switch (input.inputType) {
       case 'mouse_move':
         await this.page.mouse.move(input.x, input.y);

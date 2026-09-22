@@ -1,7 +1,13 @@
 import { describe, test, expect } from 'vitest';
 import { SessionRegistry } from '../src/registry.js';
 import { raiseIntervention } from '../src/intervention.js';
-import { handOff, handBack, resolveIntervention } from '../src/handoff.js';
+import {
+  handOff,
+  handBack,
+  resolveIntervention,
+  operatorHoldsControl,
+  recordOperatorInput,
+} from '../src/handoff.js';
 
 function pausedSession(sessionId = 's1') {
   const registry = new SessionRegistry();
@@ -148,5 +154,56 @@ describe('full escalation cycle', () => {
       ['run_resumed', 'system'],
       ['run_completed', 'system'],
     ]);
+  });
+});
+
+describe('Control and the operator record', () => {
+  test('control is held by the operator only while the session is handed off', () => {
+    const registry = new SessionRegistry();
+    registry.create('s1');
+    registry.startRun('s1', 'run-1');
+
+    // Running: the system is driving, so operator input must be refused.
+    expect(operatorHoldsControl(registry, 's1')).toBe(false);
+
+    raiseIntervention({
+      registry,
+      sessionId: 's1',
+      runId: 'run-1',
+      failureCode: 'session_expired',
+      message: 'Session expired',
+    });
+    expect(operatorHoldsControl(registry, 's1')).toBe(false);
+
+    handOff(registry, 's1', 'operator-1');
+    expect(operatorHoldsControl(registry, 's1')).toBe(true);
+
+    handBack(registry, 's1', 'operator-1');
+    expect(operatorHoldsControl(registry, 's1')).toBe(false);
+  });
+
+  test('an unknown session never holds control', () => {
+    expect(operatorHoldsControl(new SessionRegistry(), 'nope')).toBe(false);
+  });
+
+  test('operator actions land in the ledger without their values', () => {
+    const registry = new SessionRegistry();
+    registry.create('s1');
+    registry.startRun('s1', 'run-1');
+
+    recordOperatorInput(registry, 's1', { inputType: 'type_text', text: 'hunter2' });
+    recordOperatorInput(registry, 's1', { inputType: 'key_press', key: 'Enter' });
+
+    const entries = registry
+      .get('s1')
+      .ledger.filter((entry) => entry.action === 'operator_input');
+
+    expect(entries).toHaveLength(2);
+    expect(entries.every((entry) => entry.actor === 'operator')).toBe(true);
+
+    // The length is recorded, the characters are not — what was typed is as
+    // likely to be a credential as anything else.
+    expect(entries[0]!.detail).toEqual({ inputType: 'type_text', characters: 7 });
+    expect(JSON.stringify(entries)).not.toContain('hunter2');
   });
 });
