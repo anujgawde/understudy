@@ -12,7 +12,7 @@
  * Exits non-zero if any row disagrees, so it can gate a commit.
  */
 import { spawn, type ChildProcess } from 'node:child_process';
-import { readFile, rm } from 'node:fs/promises';
+import { copyFile, mkdir, readFile, rm } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -101,6 +101,14 @@ async function main(): Promise<void> {
 
   try {
     await waitForHealth();
+
+    // The brief asks the evidence folder to hold the artifact as well as the
+    // runs, and a folder that carries the runs without the thing they replayed
+    // cannot be checked by anyone. Copied rather than referenced so the folder
+    // stands on its own if it is moved.
+    const capabilityDirectory = join(repoRoot, 'evidence', CAPABILITY_ID);
+    await mkdir(capabilityDirectory, { recursive: true });
+    await copyFile(join(repoRoot, ARTIFACT), join(capabilityDirectory, 'capability.json'));
 
     for (const scenario of SCENARIOS) {
       // Written to the directory the outcome is *expected* to produce. A run
