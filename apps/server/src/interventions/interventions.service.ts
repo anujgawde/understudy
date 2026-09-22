@@ -1,5 +1,6 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import type { FailureCode } from '@understudy/schemas';
+import { JsonStore } from '../json-store.js';
 import {
   SessionRegistry,
   raiseIntervention,
@@ -8,6 +9,7 @@ import {
   handBack,
   resolveIntervention,
   type Intervention,
+  type LedgerEntry,
   type Session,
 } from '@understudy/session';
 
@@ -24,7 +26,43 @@ export interface RaiseOptions {
 
 @Injectable()
 export class InterventionsService {
+  // The registry holds sessions this process is driving. Interventions raised
+  // by a CLI run happened in a different process entirely, and an inbox that
+  // empties when the server restarts is not an inbox — so what is reported is
+  // written down rather than remembered.
+  private readonly store = new JsonStore<Intervention>('interventions');
+  private readonly ledgers = new JsonStore<LedgerEntry[]>('ledgers');
+
   constructor(private readonly registry: SessionRegistry) {}
+
+  /** Records an intervention raised elsewhere, so it outlives the run and the process. */
+  record(intervention: Intervention, ledger?: LedgerEntry[]): Intervention {
+    this.store.set(intervention.interventionId, intervention);
+    if (ledger && ledger.length > 0) this.ledgers.set(intervention.interventionId, ledger);
+    return intervention;
+  }
+
+  /** Everything recorded, newest first, whichever process raised it. */
+  findAll(): Intervention[] {
+    const live = this.registry.listSessions().flatMap((session) => session.interventions);
+    const stored = this.store.all();
+
+    const byId = new Map<string, Intervention>();
+    for (const intervention of [...stored, ...live]) {
+      byId.set(intervention.interventionId, intervention);
+    }
+
+    return [...byId.values()].sort((left, right) => right.raisedAt.localeCompare(left.raisedAt));
+  }
+
+  /** The most recently recorded ledger, which is what the takeover screen reads. */
+  findLedger(): LedgerEntry[] {
+    for (const intervention of this.findAll()) {
+      const ledger = this.ledgers.get(intervention.interventionId);
+      if (ledger) return ledger;
+    }
+    return [];
+  }
 
   // The session package signals both a missing session and a refused state
   // transition as a plain Error. Left alone every one of those becomes a 500,

@@ -1,14 +1,29 @@
 import { Body, Controller, Get, Param, Post, Query } from '@nestjs/common';
-import type { Intervention, Session } from '@understudy/session';
+import type { Intervention, LedgerEntry, Session } from '@understudy/session';
 import { InterventionsService } from './interventions.service.js';
 
 @Controller('interventions')
 export class InterventionsController {
   constructor(private readonly interventions: InterventionsService) {}
 
+  // Everything recorded, whichever process raised it. Declared before the
+  // parameterised routes below, which would otherwise swallow "ledger".
   @Get()
-  findOpen(@Query('sessionId') sessionId?: string): Intervention[] {
-    return this.interventions.findOpen(sessionId);
+  findAll(@Query('sessionId') sessionId?: string): Intervention[] {
+    return sessionId ? this.interventions.findOpen(sessionId) : this.interventions.findAll();
+  }
+
+  @Get('ledger')
+  findLedger(): LedgerEntry[] {
+    return this.interventions.findLedger();
+  }
+
+  /** Records an intervention a CLI run raised in its own process. */
+  @Post()
+  record(
+    @Body() body: { intervention: Intervention; ledger?: LedgerEntry[] },
+  ): Intervention {
+    return this.interventions.record(body.intervention, body.ledger);
   }
 
   @Get(':sessionId')
