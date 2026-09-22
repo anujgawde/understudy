@@ -58,6 +58,29 @@ npm run task "look up member 67890 and read the savings balance"
 Any user id and password are accepted by the target app's login, so `--input password=anything`
 is fine.
 
+### Running it without a model
+
+`replay` never calls a model, so the whole error taxonomy can be walked with no API key set at
+all. A hand-written artifact ships with the repo; point it at the running target app and change
+only the member number:
+
+```bash
+npm run target-app          # in one terminal
+
+# and in another — note GEMINI_API_KEY is not needed and can be unset
+npm run replay packages/schemas/examples/lookup-savings-balance.capability.json -- \
+  --input memberNumber=12345 \
+  --input operatorUserId=tester \
+  --input operatorPassword=anything
+```
+
+Swapping `memberNumber` walks every runtime condition in the table under
+[The target application](#the-target-application) — `99999` for not-found, `88888` for a
+validation error, `55555` for a permission denial, `66666` and `22222` for the two recoverable
+conditions, `33333`, `44444` and `77777` for the three hard failures. Each run writes its log
+and screenshots under `replays/<classification>/<run-id>/` beside the artifact, or wherever
+`--output` points.
+
 ---
 
 ## The three commands
@@ -110,7 +133,14 @@ entirely by calling `replay` directly.
 --headed    show the browser
 --output    evidence directory              (default: evidence)
 --maxSteps  step budget for discovery       (discover only)
+
+--allow-mutations         approve mutating actions up front      (discover, task)
+--approve-irreversible    let replay perform irreversible steps  (replay, task)
 ```
+
+Without `--allow-mutations`, discovery asks before each mutating action on a terminal, and
+denies it when there is no terminal to ask on. Without `--approve-irreversible`, replay stops in
+front of a step recorded as irreversible and raises an intervention instead of performing it.
 
 Credentials never appear in a goal string, so `--input` stays the way to supply them, and
 anything passed there wins over a value inferred from the request.
@@ -304,15 +334,27 @@ reputation for crying wolf, and it's the single most common way this kind of sys
 | ------------------ | ---------------------------------------------------------------------- |
 | `success`          | Every step ran, every checkpoint held, outputs extracted               |
 | `business_outcome` | The application gave a legitimate negative answer — `member_not_found` |
-| `recovered`        | Something went wrong and replay handled it — **see Known gaps**        |
+| `recovered`        | The outputs were reached, but not first time — carries a `recoveries` list |
 | `failed`           | A genuine malfunction, with a failure code and the step it died on     |
 
 Failure codes: `locator_not_found`, `assertion_failed`, `extraction_failed`,
-`type_coercion_failed`, `navigation_failed`, `session_expired`, `policy_denied`, `timeout`,
-`step_budget_exhausted`.
+`type_coercion_failed`, `navigation_failed`, `session_expired`, `unexpected_dialog`,
+`app_error`, `approval_required`, `policy_denied`, `timeout`, `step_budget_exhausted`.
 
-Classification is mechanical: completed all steps means success; otherwise the business outcome
-rules are matched in order; otherwise it failed.
+Classification runs in a fixed order, and the order is the point. A failed checkpoint says the
+expected result is missing; it never says why. So:
+
+1. Completed everything → `success`, or `recovered` if anything had to be cleared first.
+2. Failures that describe the run rather than the answer — `session_expired`, `app_error`,
+   `unexpected_dialog`, `approval_required`, `policy_denied` — are never business outcomes,
+   whatever the page says.
+3. A declared rule fires only if **both** its condition holds (which step or checkpoint failed)
+   **and** its signal is on the page (text that means this outcome specifically). Every rule
+   whose condition matched is recorded in the run log with whether its signal was found, so a
+   rule refused on evidence is visible rather than silent.
+4. Otherwise → `failed`.
+
+`recovered` exits 0 from the CLI, the same as `success`: the caller got its outputs.
 
 ---
 
@@ -329,9 +371,18 @@ carries `{{operatorPassword}}`; the value arrives at replay time via `--input`.
 
 **Policy.** Navigation is confined to allowed origins, and actions are classed `read`,
 `navigate`, or `mutate` with an `allow` / `confirm` / `deny` decision each. Runs have a step
-budget. Note that the CLI allows mutations rather than confirming them — it has no channel to
-ask on, and an operator is already sitting in front of it. The confirm path is exercised by
-callers that supply `onConfirmAction`.
+budget. The default is `mutate: confirm`: discovery prompts on a terminal and denies when there
+is none, unless `--allow-mutations` says otherwise. A click counts as a mutation when the
+control's name matches the policy's `irreversibleControlLabels` — "Post Transaction" and "Back
+to Search" are the same DOM event, and only one of them needs asking about.
+
+**Irreversible steps.** The recorder marks a step `irreversible` when it clicks one of those
+controls. Replay refuses to perform it without `--approve-irreversible`, raising an
+`approval_required` intervention instead. The step does not run: the locator is never resolved.
+
+**Screenshots are masked at capture.** Password fields always, plus fields and table cells whose
+labelling matches a redacted field name. The mask is applied on the page before the frame is
+written, because a screenshot carries values as pixels where text redaction cannot reach.
 
 **Element provenance.** The model can only act on elements a preceding `observe` actually
 showed it. A handle it invented is refused.
@@ -341,12 +392,12 @@ showed it. A handle it invented is refused.
 Understudy drives a browser against a real application with real credentials, so the sharp
 edges are worth naming rather than leaving to be found.
 
-**Screenshots are not redacted.** Redaction is text-only — run logs and artifacts. Screenshots
-capture the page exactly as rendered, including the account numbers, names and balances the
-text redaction would have stripped. Since `evidence/` is committed deliberately, a run against
-a system holding real data will put unredacted images of that data into version control. Treat
-the screenshots in an evidence directory as sensitive, and don't point this at production data
-without changing that.
+**Screenshot masking is only as good as the labelling.** Password fields are always covered, and
+so are fields and table cells whose labelling matches a redacted field name. A value with no
+label, or one labelled in a way no policy entry anticipates, is captured in the clear. The mask
+is deliberately narrow rather than covering the page, because evidence nobody can read is not
+evidence. Since `evidence/` is committed deliberately, treat the screenshots in it as sensitive
+and check what a run actually captured before pointing this at real data.
 
 **Values passed with `--input` are visible on the machine.** They land in shell history and, for
 the lifetime of the run, in the process list — where any other user on the same host can read
@@ -365,8 +416,10 @@ the artifact is a reviewable file rather than an opaque policy.
 
 **Replay inherits whatever discovery believed.** An artifact is a sequence of actions that will
 be performed without further judgment. If discovery was manipulated, or simply wrong, replay
-will repeat it faithfully and quickly. The `mutate` action class and the `confirm` decision
-exist for this reason, though the CLI allows mutations rather than confirming them.
+will repeat it faithfully and quickly. The `mutate` class, the `confirm` decision and the
+`irreversible` step risk all exist for this reason — but `irreversibleControlLabels` is a word
+list, so a button labelled in a way the policy does not anticipate is recorded as reversible and
+replay will press it.
 
 **The target app has no real authentication.** `apps/target-app` accepts any user id and
 password by design — it is a fixture for automating against, not a model of an auth system, and
@@ -380,21 +433,30 @@ it should not be exposed beyond localhost.
 actually shows up in: table-based layout, `ctl00$ContentMain$` form field names, no proper
 labels, a results grid that posts a form instead of linking, and a maintenance banner.
 
-Any user id and password log in. Three member numbers trigger specific behaviours, which is how
-the outcome taxonomy gets exercised:
+Any user id and password log in. Eight member numbers trigger the runtime conditions the brief
+names, which is how the outcome taxonomy gets exercised:
 
-| Member number       | Behaviour                                  | Expected classification                     |
-| ------------------- | ------------------------------------------ | ------------------------------------------- |
-| `12345`, `67890`, … | Normal member                              | `success`                                   |
-| `99999`             | Search returns no rows                     | `business_outcome` / `member_not_found`     |
-| `88888`             | Three validation errors with codes         | `business_outcome`                          |
-| `77777`             | Session silently expires, bounced to login | `failed` / `session_expired` → intervention |
+| Member number       | Behaviour                                    | Classification                                |
+| ------------------- | -------------------------------------------- | --------------------------------------------- |
+| `12345`, `67890`, … | Normal member                                | `success`                                      |
+| `99999`             | Search returns no rows                       | `business_outcome` / `member_not_found`        |
+| `88888`             | Three validation errors with codes           | `business_outcome` / `validation_rejected`     |
+| `55555`             | Record exists, operator not authorized       | `business_outcome` / `access_denied`           |
+| `66666`             | Share rows arrive 1.5s after the grid frame  | `recovered` via `retried_read`                 |
+| `22222`             | Dismissible maintenance notice withholds rows| `recovered` via `dismissed_interstitial`       |
+| `33333`             | Fires a `confirm()` nobody declared          | `failed` / `unexpected_dialog` → intervention  |
+| `44444`             | Server returns HTTP 500                      | `failed` / `app_error`                         |
+| `77777`             | Session silently expires, bounced to login   | `failed` / `session_expired` → intervention    |
 
-`99999` returning `business_outcome` rather than `failed` is the specific proof that checkpoint
-derivation and outcome shaping both worked. The right-hand column is what a correctly shaped
-capability should report — the classification is only as good as the rules the shaping step
-produced for that particular artifact, which is exactly why it is worth checking against a real
-discovery rather than asserting here.
+The interesting pair is `99999` and `55555`. Both stop on the same step with the same failure
+code, and the shipped artifact separates them only by what the page says — `No records matched`
+versus `SEC-MBR-004`. That is the whole argument for signals on outcome rules: without one, a
+rule keyed on a failed step fires for every reason that step can fail, and a permission denial
+comes back to the caller as "no such member".
+
+The right-hand column is what the shipped example artifact reports; a freshly discovered
+artifact is only as good as the rules the shaping step proposed for it, which is why it is worth
+checking against a real discovery rather than asserting here.
 
 ---
 
@@ -495,35 +557,20 @@ that makes artifacts trustworthy.
 
 Current limitations, stated plainly so nobody has to discover them the hard way.
 
-**The newest pieces have only been tested against fakes.** A real Gemini discovery run
-succeeded end to end and its artifact replayed with no model in the loop — that part is proven.
-Checkpoint derivation, outcome shaping and intent matching all landed after that run, and are
-covered by unit tests with a stand-in provider rather than by a live run. So the headline claim
-— discover a task against one member, then replay it for a different one via `task` — is
-implemented and unit-tested, but not yet demonstrated against a real model.
+**The discovery half is less proven than the replay half.** A real Gemini discovery run
+succeeded end to end and its artifact replayed with no model in the loop. Checkpoint derivation,
+outcome shaping and intent matching all landed after that run and are covered by unit tests with
+a stand-in provider rather than by a live one. The replay side, by contrast, is exercised
+against the real target app in a browser on every test run.
 
-**`recovered` is declared but never produced.** It is in the schema, the console renders a
-screen for it, the fixtures show one — and no code path in the replay engine can emit it. Three
-outcomes are handled on paper; two in practice. It needs a real recovery path (retry a timed-out
-load, dismiss a known interstitial) and a way to deliberately inject the condition it recovers
-from.
-
-**The shipped example artifact doesn't run.**
-`packages/schemas/examples/lookup-savings-balance.capability.json` uses `{{operatorUserId}}` and
-`{{operatorPassword}}` in its steps but declares only `memberNumber` as an input, so replay
-stops on it. It passes validation because `superRefine` checks three cross-references but not
-placeholder-to-input — the one check that determines whether an artifact can actually run.
-
-**Redaction is unverified.** Replay scrubs credentials before writing, but no test fails if
-that stops happening. The protection is correct because it was written correctly, not because
-anything enforces it.
-
-**The console is fixture-driven.** `apps/client` renders from static fixtures and is not wired
-to the server. `apps/server` holds runs and capabilities in in-memory maps and is not wired to
-the CLI. Both are real in shape, neither is connected to a live run.
+**Outcome signals are a model's hypothesis.** The recorder asks the model to propose the text
+replay should look for when an outcome fires, and the model only ever saw the flow succeed. A
+wrong signal costs a business outcome that falls through to a plain `failed` — visible in the
+run log and fixable in the artifact. A rule proposed with no signal at all is dropped rather
+than recorded, because a rule without one fires on any cause and that is worse than no rule.
 
 **Intent matching doesn't scale as written.** Every capability in the library goes into the
-prompt on every request, so cost and latency grow with the catalogue, and precision drops as
+prompt on every request, so cost and latency grow with the catalogue and precision drops as
 capabilities come to resemble each other. Retrieval over capability goals — shortlist the
 nearest few, then let the model pick — is the obvious next move.
 
@@ -534,12 +581,18 @@ wants `0012345` — and bakes the value in as a constant. The failure is silent 
 direction.
 
 **`approved` is the model's own word.** A capability is only recorded when the model reports
-success, and nothing checks that claim against the page. Now that checkpoints exist, there is a
+success, and nothing checks that claim against the page. Now that checkpoints exist there is a
 real check available: have discovery replay its own fresh artifact once and approve only if the
 checkpoints hold and the outputs match.
 
 **Re-discovery overwrites.** A goal that slugs to an existing capability id replaces it.
 `version` exists in the schema and is always `1`.
+
+**Wait conditions are the weak point for determinism.** `fixedDelay`, CSS rungs and `textPresent`
+waits are all web-specific and brittle in different ways. A `textPresent` wait is the worst:
+when the awaited text never appears the step fails as a locator problem, even though the locator
+is fine. Three of the outcome rules in the shipped artifact are keyed on exactly that failure —
+it works, but it reads as a workaround for the wait strategy rather than a design.
 
 **One task shape.** Everything has been proven against the member lookup flow. A second,
 structurally different task would be the real test of whether the recorder generalises.
