@@ -16,6 +16,7 @@ function parseCliArguments() {
   const { values, positionals } = parseArgs({
     allowPositionals: true,
     options: {
+      input: { type: 'string', short: 'i', multiple: true, default: [] },
       url: { type: 'string', short: 'u', default: 'http://localhost:4000' },
       headed: { type: 'boolean', default: false },
       output: { type: 'string', short: 'o', default: 'evidence' },
@@ -29,8 +30,9 @@ function parseCliArguments() {
   const goal = positionals[0];
   if (!goal) {
     console.error(
-      'Usage: discover <goal> [--provider gemini|anthropic|ollama] [--url http://...] [--headed] ' +
-        '[--output dir] [--model model-id] [--maxSteps n] [--allow-mutations]',
+      'Usage: discover <goal> [--input key=value ...] [--provider gemini|anthropic|ollama] ' +
+        '[--url http://...] [--headed] [--output dir] [--model model-id] [--maxSteps n] ' +
+        '[--allow-mutations]',
     );
     process.exit(1);
   }
@@ -43,8 +45,19 @@ function parseCliArguments() {
     process.exit(1);
   }
 
+  const inputs: Record<string, string> = {};
+  for (const raw of values.input ?? []) {
+    const equalsIndex = raw.indexOf('=');
+    if (equalsIndex === -1) {
+      console.error(`Invalid --input format: "${raw}" (expected key=value)`);
+      process.exit(1);
+    }
+    inputs[raw.slice(0, equalsIndex)] = raw.slice(equalsIndex + 1);
+  }
+
   return {
     goal,
+    inputs,
     provider: provider as 'gemini' | 'anthropic' | 'ollama',
     startUrl: values.url ?? 'http://localhost:4000',
     headed: values.headed ?? false,
@@ -150,6 +163,9 @@ async function main(): Promise<void> {
   }
 
   console.error(`Goal: ${args.goal}`);
+  console.error(
+    `Inputs: ${Object.keys(args.inputs).join(', ') || 'none'} (values are never shown to the model)`,
+  );
   console.error(`Target: ${args.startUrl}`);
   console.error(`Provider: ${args.provider}`);
   console.error(`Model: ${modelProvider.modelId}`);
@@ -179,6 +195,7 @@ async function main(): Promise<void> {
       surface,
       modelProvider,
       policy,
+      inputs: args.inputs,
       maxSteps: args.maxSteps,
       onConfirmAction: confirmOnTerminal,
       onEntry(entry) {

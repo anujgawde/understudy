@@ -163,6 +163,37 @@ export function recordCapability(runLog: RunLog, options: RecordingOptions): Cap
     }
 
     if (action.actionType === 'fill') {
+      // Already a placeholder: discovery was handed this value and typed the
+      // reference rather than the value, so the parameter is a fact rather than
+      // something to infer. The name is taken as given.
+      const declared = /^\{\{(\w+)\}\}$/.exec(action.value)?.[1];
+
+      if (declared !== undefined) {
+        if (!takenValueNames.has(declared)) {
+          takenValueNames.add(declared);
+          inputs.push({
+            name: declared,
+            valueType: 'string',
+            required: true,
+            secret:
+              element !== undefined && options.policy !== undefined
+                ? isSensitiveField(options.policy, element)
+                : false,
+            ...(label && { description: label }),
+          });
+        }
+
+        steps.push({
+          stepId: uniqueName(
+            `${action.actionType}-${identifierFrom(label ?? '') || String(index + 1)}`,
+            takenStepIds,
+          ),
+          action,
+          risk: riskOf(action, element, options),
+        });
+        return;
+      }
+
       // A secret is parameterised whether or not it can be traced to somewhere
       // outside the page: inlining it as a constant of the flow is exactly the
       // leak this is here to prevent.

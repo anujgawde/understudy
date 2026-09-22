@@ -14,6 +14,10 @@ export interface DiscoveryOptions {
   surface: Surface;
   modelProvider: ModelProvider;
   policy?: Policy;
+  // Values the run was handed. The model is told the names and types
+  // "{{name}}"; the value is substituted on its way to the page and never
+  // enters the prompt, the conversation or the run log.
+  inputs?: Record<string, string>;
   maxSteps?: number;
   onEntry?: (entry: RunLogEntry) => void;
   onConfirmAction?: (request: ConfirmActionRequest) => Promise<boolean>;

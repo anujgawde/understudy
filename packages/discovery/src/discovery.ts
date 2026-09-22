@@ -68,6 +68,22 @@ function elementNames(entries: RunLogEntry[], elementRef: string | undefined): s
   return undefined;
 }
 
+/**
+ * Swaps "{{name}}" for the value on the way to the page, and nowhere else. The
+ * action recorded in the run log keeps the placeholder, so a credential the
+ * model typed is never written down — and the recorder receives a step that is
+ * already parameterised rather than one it has to infer a parameter from.
+ */
+function resolvePlaceholders(action: Action, inputs: Record<string, string>): Action {
+  if (action.actionType !== 'fill') return action;
+
+  const value = action.value.replace(/\{\{(\w+)\}\}/g, (whole, name: string) =>
+    inputs[name] ?? whole,
+  );
+
+  return { ...action, value };
+}
+
 function checkPolicy(
   policy: Policy,
   action: Action,
@@ -173,6 +189,7 @@ function buildActionFromToolInput(input: Record<string, unknown>, validRefs: str
 
 export async function discover(options: DiscoveryOptions): Promise<DiscoveryResult> {
   const { goal, startUrl, surface, modelProvider, policy, onEntry, onConfirmAction } = options;
+  const inputs = options.inputs ?? {};
   const maxSteps = options.maxSteps ?? policy?.maxStepsPerRun ?? 30;
   const runId = crypto.randomUUID();
   const startedAt = new Date().toISOString();
@@ -184,7 +201,7 @@ export async function discover(options: DiscoveryOptions): Promise<DiscoveryResu
     onEntry?.(entry);
   }
 
-  const systemPrompt = buildSystemPrompt(goal, startUrl);
+  const systemPrompt = buildSystemPrompt(goal, startUrl, Object.keys(inputs));
   const messages: ConversationMessage[] = [];
   let stepCount = 0;
   let finishPayload: FinishPayload | null = null;
@@ -276,6 +293,7 @@ export async function discover(options: DiscoveryOptions): Promise<DiscoveryResu
         entries,
         sequence,
         addEntry,
+        inputs,
         onConfirmAction,
       );
       sequence = result.nextSequence;
@@ -309,7 +327,7 @@ export async function discover(options: DiscoveryOptions): Promise<DiscoveryResu
     runId,
     mode: 'discovery',
     goal,
-    inputs: {},
+    inputs,
     startedAt,
     completedAt: new Date().toISOString(),
     entries,
@@ -326,6 +344,7 @@ async function executeToolCall(
   entries: RunLogEntry[],
   sequence: number,
   addEntry: (entry: RunLogEntry) => void,
+  inputs: Record<string, string>,
   onConfirmAction?: DiscoveryOptions['onConfirmAction'],
 ): Promise<ToolCallResult> {
   switch (toolCall.toolName) {
@@ -333,7 +352,16 @@ async function executeToolCall(
       return handleObserve(toolCall, surface, sequence, addEntry);
 
     case 'act':
-      return handleAct(toolCall, surface, policy, entries, sequence, addEntry, onConfirmAction);
+      return handleAct(
+        toolCall,
+        surface,
+        policy,
+        entries,
+        sequence,
+        addEntry,
+        inputs,
+        onConfirmAction,
+      );
 
     case 'extract':
       return handleExtract(toolCall, surface, entries, sequence, addEntry);
@@ -387,6 +415,7 @@ async function handleAct(
   entries: RunLogEntry[],
   sequence: number,
   addEntry: (entry: RunLogEntry) => void,
+  inputs: Record<string, string>,
   onConfirmAction?: DiscoveryOptions['onConfirmAction'],
 ): Promise<ToolCallResult> {
   let action: Action;
@@ -473,7 +502,7 @@ async function handleAct(
   }
 
   try {
-    await surface.act(action);
+    await surface.act(resolvePlaceholders(action, inputs));
   } catch (error) {
     addEntry({
       entryType: 'action',
