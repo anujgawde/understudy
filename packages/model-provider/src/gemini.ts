@@ -60,13 +60,14 @@ export class GeminiProvider implements ModelProvider {
       }
     }
 
-    let rationale: string | null = null;
+    // Collected rather than overwritten; see the Anthropic adapter.
+    const rationaleParts: string[] = [];
     const toolCalls: ToolCall[] = [];
 
     const parts = response.candidates?.[0]?.content?.parts ?? [];
     for (const part of parts) {
       if (part.text) {
-        rationale = part.text;
+        rationaleParts.push(part.text);
       }
       if (part.functionCall) {
         const toolCallId = `gemini-${crypto.randomUUID()}`;
@@ -92,7 +93,7 @@ export class GeminiProvider implements ModelProvider {
     }
 
     return {
-      rationale,
+      rationale: rationaleParts.join('\n\n') || null,
       toolCalls,
       stopReason,
       inputTokens: response.usageMetadata?.promptTokenCount ?? 0,

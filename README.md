@@ -150,7 +150,7 @@ anything passed there wins over a value inferred from the request.
 | Provider    | Default model              | Credential                                             |
 | ----------- | -------------------------- | ------------------------------------------------------ |
 | `gemini`    | `gemini-3.6-flash`         | `GEMINI_API_KEY`                                       |
-| `anthropic` | `claude-sonnet-4-20250514` | `ANTHROPIC_API_KEY`                                    |
+| `anthropic` | `claude-sonnet-5`          | `ANTHROPIC_API_KEY`                                    |
 | `ollama`    | `llama3.1`                 | none — `OLLAMA_HOST`, default `http://localhost:11434` |
 
 All three sit behind one `ModelProvider` interface with a single method, `completeWithTools`.
@@ -503,7 +503,7 @@ sitting side by side is the clearest possible demonstration that the taxonomy is
 ## Development
 
 ```bash
-npm test              # 191 tests, 21 files
+npm test              # 239 tests, 26 files
 npm run typecheck
 npm run lint
 npm run build

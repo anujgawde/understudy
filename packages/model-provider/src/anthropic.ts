@@ -15,7 +15,7 @@ export class AnthropicProvider implements ModelProvider {
   private readonly maxTokens: number;
 
   constructor(options?: AnthropicProviderOptions) {
-    this.modelId = options?.modelId ?? 'claude-sonnet-4-20250514';
+    this.modelId = options?.modelId ?? 'claude-sonnet-5';
     this.maxTokens = options?.maxTokens ?? 4096;
     this.client = new Anthropic();
   }
@@ -33,12 +33,15 @@ export class AnthropicProvider implements ModelProvider {
       tools: options.tools.map(toAnthropicTool),
     });
 
-    let rationale: string | null = null;
+    // Collected rather than overwritten. A model that thinks in several blocks
+    // was having all but its last thought dropped, and the run log is supposed
+    // to record what the agent did *and why*.
+    const rationaleParts: string[] = [];
     const toolCalls: ToolCall[] = [];
 
     for (const block of response.content) {
       if (block.type === 'text') {
-        rationale = block.text;
+        rationaleParts.push(block.text);
       } else if (block.type === 'tool_use') {
         toolCalls.push({
           toolCallId: block.id,
@@ -49,7 +52,7 @@ export class AnthropicProvider implements ModelProvider {
     }
 
     return {
-      rationale,
+      rationale: rationaleParts.join('\n\n') || null,
       toolCalls,
       stopReason: response.stop_reason as ModelTurn['stopReason'],
       inputTokens: response.usage.input_tokens,
