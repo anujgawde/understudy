@@ -1,8 +1,10 @@
 import type {
   Action,
   Assertion,
+  BusinessOutcomeRule,
   Capability,
   Checkpoint,
+  Recovery,
   RunLog,
   RunLogEntry,
   ValueType,
@@ -10,7 +12,7 @@ import type {
 import type { Surface } from '@understudy/surface';
 import type { Intervention } from '@understudy/session';
 import { raiseIntervention, shouldEscalate } from '@understudy/session';
-import { classify } from './classifier.js';
+import { classify, conditionMatches } from './classifier.js';
 import type { ExecutorOptions, ExecutorResult, ReassertResult, TerminalState } from './types.js';
 
 const AUTH_URL_PATTERN = /(^|[/.])(login|log-in|signin|sign-in|auth|sso|session)([/?#]|$)/i;
@@ -136,6 +138,37 @@ async function evaluateCheckpoint(
   return { passed: true };
 }
 
+/**
+ * Clears any declared notice currently sitting over the flow and reports what it
+ * cleared. Only interstitials the capability declares are touched: dismissing an
+ * unknown overlay would mean clicking a control nobody recorded, on a page whose
+ * state replay cannot account for.
+ *
+ * Each one is checked against its own `when` signal first, so the dismiss
+ * control is only hunted for when the notice is actually showing.
+ */
+async function dismissInterstitials(
+  capability: Capability,
+  surface: Surface,
+): Promise<string[]> {
+  const dismissed: string[] = [];
+
+  for (const interstitial of capability.interstitials ?? []) {
+    if (!(await evaluateAssertion(interstitial.when, surface))) continue;
+
+    try {
+      await surface.act({ actionType: 'click', target: interstitial.dismiss });
+      dismissed.push(interstitial.name);
+    } catch {
+      // The notice is showing but its dismiss control is not where the artifact
+      // says. That is a locator problem, and leaving the checkpoint to fail
+      // reports it as one rather than hiding it behind a recovery.
+    }
+  }
+
+  return dismissed;
+}
+
 // An operator who took the session over may have navigated anywhere. Before the
 // run is allowed to replay into the page they left behind, the checkpoints that
 // the previous step established have to still hold.
@@ -182,7 +215,12 @@ export async function execute(options: ExecutorOptions): Promise<ExecutorResult>
     await options.onEntry?.(entry);
   };
 
-  const terminal: TerminalState = { completedAllSteps: true, outputs: {} };
+  const recoveries: Recovery[] = [];
+  const terminal: TerminalState = { completedAllSteps: true, outputs: {}, recoveries };
+
+  // Anything left over belongs to whatever ran before this. A run is answerable
+  // for the dialogs it raised, not for one it inherited.
+  await surface.drainDialogs();
   let lastSuccessfulStepId: string | undefined;
   let clearedAuth = false;
   let stepsToRun = capability.steps;
@@ -218,6 +256,17 @@ export async function execute(options: ExecutorOptions): Promise<ExecutorResult>
   }
 
   for (const step of stepsToRun) {
+    // Checked before the locator is even resolved. An irreversible step is one
+    // whose effect cannot be taken back, so the only safe default is to stop in
+    // front of it and ask — the alternative is finding out afterwards.
+    if (step.risk === 'irreversible' && !options.approveIrreversible) {
+      terminal.completedAllSteps = false;
+      terminal.failedAtStepId = step.stepId;
+      terminal.failureCode = 'approval_required';
+      terminal.failureMessage = `Step "${step.stepId}" is marked irreversible and needs approval before it runs`;
+      break;
+    }
+
     const action = resolveActionInputs(step.action, inputs);
     let resolvedByIndex: number | undefined;
 
@@ -259,9 +308,20 @@ export async function execute(options: ExecutorOptions): Promise<ExecutorResult>
       });
       terminal.completedAllSteps = false;
       terminal.failedAtStepId = step.stepId;
-      terminal.failureCode =
-        action.actionType === 'navigate' ? 'navigation_failed' : 'locator_not_found';
-      terminal.failureMessage = `Step "${step.stepId}": ${error instanceof Error ? error.message : String(error)}`;
+
+      // The step did not fail on its own terms — the server did, and the wait
+      // for content that was never going to render is what actually timed out.
+      // Reporting that as a missing locator would send someone looking at the
+      // artifact for a fault that is nothing to do with it.
+      const statusAfterFailure = surface.lastResponseStatus();
+      if (statusAfterFailure !== undefined && statusAfterFailure >= 500) {
+        terminal.failureCode = 'app_error';
+        terminal.failureMessage = `Step "${step.stepId}": the application returned HTTP ${statusAfterFailure}`;
+      } else {
+        terminal.failureCode =
+          action.actionType === 'navigate' ? 'navigation_failed' : 'locator_not_found';
+        terminal.failureMessage = `Step "${step.stepId}": ${error instanceof Error ? error.message : String(error)}`;
+      }
       break;
     }
 
@@ -276,6 +336,49 @@ export async function execute(options: ExecutorOptions): Promise<ExecutorResult>
       succeeded: true,
     });
     lastSuccessfulStepId = step.stepId;
+
+    // Dismissed as they arrived, so the page is already unblocked; what is left
+    // is deciding whether this flow is allowed to have raised one. A dialog the
+    // capability never declared means replay is somewhere its recording did not
+    // go, and proceeding would be the blind step the brief warns about.
+    const dialogs = await surface.drainDialogs();
+
+    for (const dialog of dialogs) {
+      const expected = capability.expectedDialogs.some((declared) =>
+        dialog.message.includes(declared),
+      );
+
+      await record({
+        entryType: 'dialog',
+        sequence: sequence++,
+        occurredAt: new Date().toISOString(),
+        actor: 'system',
+        kind: dialog.kind,
+        message: dialog.message,
+        expected,
+      });
+
+      if (!expected) {
+        terminal.completedAllSteps = false;
+        terminal.failedAtStepId = step.stepId;
+        terminal.failureCode = 'unexpected_dialog';
+        terminal.failureMessage = `Step "${step.stepId}" raised an undeclared ${dialog.kind} dialog: "${dialog.message}"`;
+      }
+    }
+
+    if (!terminal.completedAllSteps) break;
+
+    // The one runtime error that renders perfectly well. An app error page can
+    // satisfy every text assertion a checkpoint makes, so the status is what
+    // separates "the server broke" from "the answer was negative".
+    const status = surface.lastResponseStatus();
+    if (status !== undefined && status >= 500) {
+      terminal.completedAllSteps = false;
+      terminal.failedAtStepId = step.stepId;
+      terminal.failureCode = 'app_error';
+      terminal.failureMessage = `Step "${step.stepId}": the application returned HTTP ${status}`;
+      break;
+    }
 
     if (!clearedAuth && !(await looksLikeAuthPage(surface))) clearedAuth = true;
 
@@ -295,6 +398,47 @@ export async function execute(options: ExecutorOptions): Promise<ExecutorResult>
         passed: result.passed,
       });
 
+      // Two different recoverable conditions, tried cheapest first. A notice
+      // sitting over the result is cleared and the checkpoint re-read at once;
+      // only if that was not it does the run pay for the wait.
+      if (!result.passed) {
+        const dismissed = await dismissInterstitials(capability, surface);
+
+        for (const name of dismissed) {
+          const recovery = {
+            kind: 'dismissed_interstitial' as const,
+            atStepId: step.stepId,
+            detail: `dismissed the "${name}" interstitial`,
+          };
+          recoveries.push(recovery);
+          await record({
+            entryType: 'recovery',
+            sequence: sequence++,
+            occurredAt: new Date().toISOString(),
+            actor: 'system',
+            recovery,
+          });
+        }
+
+        if (dismissed.length > 0) {
+          result = await evaluateCheckpoint(checkpoint, surface);
+
+          await record({
+            entryType: 'assertion',
+            sequence: sequence++,
+            occurredAt: new Date().toISOString(),
+            actor: 'system',
+            checkpointId: checkpoint.checkpointId,
+            passed: result.passed,
+          });
+
+          if (result.passed) {
+            terminal.recoveredFrom = 'assertion_failed';
+            terminal.attempts = (terminal.attempts ?? 1) + 1;
+          }
+        }
+      }
+
       if (!result.passed) {
         await waitBeforeRetry();
         result = await evaluateCheckpoint(checkpoint, surface);
@@ -309,8 +453,22 @@ export async function execute(options: ExecutorOptions): Promise<ExecutorResult>
         });
 
         if (result.passed) {
+          const recovery = {
+            kind: 'retried_read' as const,
+            atStepId: step.stepId,
+            detail: `checkpoint "${checkpoint.checkpointId}" passed on a second read after ${RECOVERY_DELAY_MILLISECONDS}ms`,
+          };
+          recoveries.push(recovery);
+          await record({
+            entryType: 'recovery',
+            sequence: sequence++,
+            occurredAt: new Date().toISOString(),
+            actor: 'system',
+            recovery,
+          });
+
           terminal.recoveredFrom = 'assertion_failed';
-          terminal.attempts = 2;
+          terminal.attempts = (terminal.attempts ?? 1) + 1;
         }
       }
 
@@ -339,8 +497,22 @@ export async function execute(options: ExecutorOptions): Promise<ExecutorResult>
         try {
           const { text } = await surface.extractText(extraction.target);
           rawValue = text;
+
+          const recovery = {
+            kind: 'retried_read' as const,
+            detail: `extraction "${extraction.outputName}" resolved on a second read after ${RECOVERY_DELAY_MILLISECONDS}ms`,
+          };
+          recoveries.push(recovery);
+          await record({
+            entryType: 'recovery',
+            sequence: sequence++,
+            occurredAt: new Date().toISOString(),
+            actor: 'system',
+            recovery,
+          });
+
           terminal.recoveredFrom = 'extraction_failed';
-          terminal.attempts = 2;
+          terminal.attempts = (terminal.attempts ?? 1) + 1;
         } catch {
           await record({
             entryType: 'extraction',
@@ -394,7 +566,33 @@ export async function execute(options: ExecutorOptions): Promise<ExecutorResult>
     terminal.failureMessage = `Session expired before "${terminal.failedAtStepId ?? 'extraction'}" could complete`;
   }
 
-  const outcome = classify(terminal, capability.businessOutcomes ?? []);
+  // A rule earns its outcome only if the page backs it up. The condition says
+  // which checkpoint failed; the signal says the page is actually showing the
+  // situation the rule names. Both halves are recorded, so a rule that matched
+  // on structure and was refused on evidence is visible in the log rather than
+  // being the invisible reason the caller got a different answer.
+  const applicableRules: BusinessOutcomeRule[] = [];
+
+  if (!terminal.completedAllSteps) {
+    for (const rule of capability.businessOutcomes ?? []) {
+      if (!conditionMatches(rule, terminal)) continue;
+
+      const signalPresent = await evaluateAssertion(rule.signal, surface);
+
+      await record({
+        entryType: 'outcome_rule',
+        sequence: sequence++,
+        occurredAt: new Date().toISOString(),
+        actor: 'system',
+        code: rule.code,
+        signalPresent,
+      });
+
+      if (signalPresent) applicableRules.push(rule);
+    }
+  }
+
+  const outcome = classify(terminal, applicableRules);
 
   let intervention: Intervention | undefined;
 

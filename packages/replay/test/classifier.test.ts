@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest';
 import type { BusinessOutcomeRule } from '@understudy/schemas';
-import { classify } from '../src/classifier.js';
+import { classify, conditionMatches } from '../src/classifier.js';
 import type { TerminalState } from '../src/types.js';
 
 describe('Outcome classifier', () => {
@@ -45,6 +45,7 @@ describe('Outcome classifier', () => {
       {
         code: 'record_not_found',
         message: 'No matching member was found',
+        signal: { assert: 'text_present', text: 'No records matched' },
         condition: {
           when: 'step_failed',
           stepId: 'click-member-row',
@@ -76,6 +77,7 @@ describe('Outcome classifier', () => {
       {
         code: 'no_results',
         message: 'Search returned no results',
+        signal: { assert: 'text_present', text: 'No records matched' },
         condition: {
           when: 'checkpoint_failed',
           checkpointId: 'results-present',
@@ -164,7 +166,7 @@ describe('Outcome classifier', () => {
     }
   });
 
-  test('rule matches step but wrong failure code → failed', () => {
+  test('condition does not match when the failure code differs', () => {
     const state: TerminalState = {
       completedAllSteps: false,
       failedAtStepId: 'click-member-row',
@@ -177,6 +179,7 @@ describe('Outcome classifier', () => {
       {
         code: 'record_not_found',
         message: 'No matching member was found',
+        signal: { assert: 'text_present', text: 'No records matched' },
         condition: {
           when: 'step_failed',
           stepId: 'click-member-row',
@@ -185,15 +188,10 @@ describe('Outcome classifier', () => {
       },
     ];
 
-    const outcome = classify(state, rules);
-
-    expect(outcome.classification).toBe('failed');
-    if (outcome.classification === 'failed') {
-      expect(outcome.failureCode).toBe('timeout');
-    }
+    expect(conditionMatches(rules[0]!, state)).toBe(false);
   });
 
-  test('rule matches failure code but wrong step → failed', () => {
+  test('condition does not match when the step differs', () => {
     const state: TerminalState = {
       completedAllSteps: false,
       failedAtStepId: 'click-sign-in',
@@ -206,6 +204,7 @@ describe('Outcome classifier', () => {
       {
         code: 'record_not_found',
         message: 'No matching member was found',
+        signal: { assert: 'text_present', text: 'No records matched' },
         condition: {
           when: 'step_failed',
           stepId: 'click-member-row',
@@ -214,12 +213,7 @@ describe('Outcome classifier', () => {
       },
     ];
 
-    const outcome = classify(state, rules);
-
-    expect(outcome.classification).toBe('failed');
-    if (outcome.classification === 'failed') {
-      expect(outcome.failedAtStepId).toBe('click-sign-in');
-    }
+    expect(conditionMatches(rules[0]!, state)).toBe(false);
   });
 
   test('first matching rule wins when multiple rules apply', () => {
@@ -235,6 +229,7 @@ describe('Outcome classifier', () => {
       {
         code: 'record_not_found',
         message: 'No matching member was found',
+        signal: { assert: 'text_present', text: 'No records matched' },
         condition: {
           when: 'step_failed',
           stepId: 'click-member-row',
@@ -244,6 +239,7 @@ describe('Outcome classifier', () => {
       {
         code: 'alternate_not_found',
         message: 'Alternate message',
+        signal: { assert: 'text_present', text: 'No records matched' },
         condition: {
           when: 'step_failed',
           stepId: 'click-member-row',
@@ -260,7 +256,7 @@ describe('Outcome classifier', () => {
     }
   });
 
-  test('checkpoint rule does not match a step failure', () => {
+  test('a checkpoint condition does not match a step failure', () => {
     const state: TerminalState = {
       completedAllSteps: false,
       failedAtStepId: 'click-member-row',
@@ -273,6 +269,7 @@ describe('Outcome classifier', () => {
       {
         code: 'no_results',
         message: 'Search returned no results',
+        signal: { assert: 'text_present', text: 'No records matched' },
         condition: {
           when: 'checkpoint_failed',
           checkpointId: 'results-present',
@@ -280,9 +277,7 @@ describe('Outcome classifier', () => {
       },
     ];
 
-    const outcome = classify(state, rules);
-
-    expect(outcome.classification).toBe('failed');
+    expect(conditionMatches(rules[0]!, state)).toBe(false);
   });
 
   test('missing failureMessage uses a default', () => {
@@ -301,6 +296,131 @@ describe('Outcome classifier', () => {
     }
   });
 
+  // The ordering below is the fix for the bug this classifier shipped with: a
+  // rule keyed on a failed checkpoint fired for every reason that checkpoint
+  // could fail, so an expired session and a rejected input both came back as
+  // "no such member".
+  test('an expired session is never reported as a business outcome', () => {
+    const state: TerminalState = {
+      completedAllSteps: false,
+      failedAtStepId: 'click-search',
+      failureCode: 'session_expired',
+      failureMessage: 'Session expired before "click-search" could complete',
+      failedCheckpointId: 'results-present',
+      outputs: {},
+    };
+
+    const rules: BusinessOutcomeRule[] = [
+      {
+        code: 'no_results',
+        message: 'Search returned no results',
+        signal: { assert: 'text_present', text: 'No records matched' },
+        condition: { when: 'checkpoint_failed', checkpointId: 'results-present' },
+      },
+    ];
+
+    // The condition matched — the checkpoint really did fail — and the outcome
+    // is still a failure, because of what made it fail.
+    expect(conditionMatches(rules[0]!, state)).toBe(true);
+
+    const outcome = classify(state, rules);
+
+    expect(outcome.classification).toBe('failed');
+    if (outcome.classification === 'failed') {
+      expect(outcome.failureCode).toBe('session_expired');
+    }
+  });
+
+  test('an application error is never reported as a business outcome', () => {
+    const state: TerminalState = {
+      completedAllSteps: false,
+      failedAtStepId: 'click-member-row',
+      failureCode: 'app_error',
+      failureMessage: 'Step "click-member-row": the application returned HTTP 500',
+      failedCheckpointId: 'results-present',
+      outputs: {},
+    };
+
+    const rules: BusinessOutcomeRule[] = [
+      {
+        code: 'no_results',
+        message: 'Search returned no results',
+        signal: { assert: 'text_present', text: 'No records matched' },
+        condition: { when: 'checkpoint_failed', checkpointId: 'results-present' },
+      },
+    ];
+
+    const outcome = classify(state, rules);
+
+    expect(outcome.classification).toBe('failed');
+    if (outcome.classification === 'failed') {
+      expect(outcome.failureCode).toBe('app_error');
+    }
+  });
+
+  test('a run stopped for approval is a failure, not a business outcome', () => {
+    const state: TerminalState = {
+      completedAllSteps: false,
+      failedAtStepId: 'click-post-transfer',
+      failureCode: 'approval_required',
+      failureMessage: 'Step "click-post-transfer" is marked irreversible and needs approval before it runs',
+      outputs: {},
+    };
+
+    const outcome = classify(state, []);
+
+    expect(outcome.classification).toBe('failed');
+    if (outcome.classification === 'failed') {
+      expect(outcome.failureCode).toBe('approval_required');
+      expect(outcome.failedAtStepId).toBe('click-post-transfer');
+    }
+  });
+
+  test('a rule whose signal was absent never reaches the classifier', () => {
+    const state: TerminalState = {
+      completedAllSteps: false,
+      failedAtStepId: 'click-search',
+      failureCode: 'assertion_failed',
+      failureMessage: 'Checkpoint "results-present" failed',
+      failedCheckpointId: 'results-present',
+      outputs: {},
+    };
+
+    // What the executor hands over when the checkpoint failed but the page was
+    // showing validation errors rather than the rule's own wording.
+    const outcome = classify(state, []);
+
+    expect(outcome.classification).toBe('failed');
+    if (outcome.classification === 'failed') {
+      expect(outcome.failureCode).toBe('assertion_failed');
+    }
+  });
+
+  test('a recovered run carries what it recovered from', () => {
+    const state: TerminalState = {
+      completedAllSteps: true,
+      recoveredFrom: 'assertion_failed',
+      attempts: 2,
+      recoveries: [
+        {
+          kind: 'dismissed_interstitial',
+          atStepId: 'click-member-row',
+          detail: 'dismissed the "scheduled maintenance" interstitial',
+        },
+      ],
+      outputs: { savingsBalance: 2940.15 },
+    };
+
+    const outcome = classify(state, []);
+
+    expect(outcome.classification).toBe('recovered');
+    if (outcome.classification === 'recovered') {
+      expect(outcome.outputs).toEqual({ savingsBalance: 2940.15 });
+      expect(outcome.recoveries).toHaveLength(1);
+      expect(outcome.recoveries[0]!.kind).toBe('dismissed_interstitial');
+    }
+  });
+
   test('success takes precedence even when business outcome rules exist', () => {
     const state: TerminalState = {
       completedAllSteps: true,
@@ -311,6 +431,7 @@ describe('Outcome classifier', () => {
       {
         code: 'record_not_found',
         message: 'No matching member was found',
+        signal: { assert: 'text_present', text: 'No records matched' },
         condition: {
           when: 'step_failed',
           stepId: 'click-member-row',

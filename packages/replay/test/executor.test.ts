@@ -190,6 +190,13 @@ describe('Executor', () => {
         classification: 'recovered',
         recoveredFrom: 'assertion_failed',
         attempts: 2,
+        recoveries: [
+          {
+            kind: 'retried_read',
+            atStepId: 'click-member-row',
+            detail: expect.stringContaining('shares-listed'),
+          },
+        ],
         outputs: {},
       });
 

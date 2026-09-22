@@ -253,6 +253,7 @@ describe('Session expiry detection', () => {
           {
             code: 'MEMBER_NOT_FOUND',
             message: 'No member matches that number',
+            signal: { assert: 'text_present', text: 'No records matched' },
             condition: { when: 'checkpoint_failed', checkpointId: 'results-shown' },
           },
         ],
