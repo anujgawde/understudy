@@ -17,13 +17,15 @@ function parseCliArguments() {
       input: { type: 'string', short: 'i', multiple: true, default: [] },
       headed: { type: 'boolean', default: false },
       output: { type: 'string', short: 'o' },
+      'approve-irreversible': { type: 'boolean', default: false },
     },
   });
 
   const artifactPath = positionals[0];
   if (!artifactPath) {
     console.error(
-      'Usage: replay <artifact.json> [--input key=value ...] [--headed] [--output path]',
+      'Usage: replay <artifact.json> [--input key=value ...] [--headed] [--output path] ' +
+        '[--approve-irreversible]',
     );
     process.exit(1);
   }
@@ -43,6 +45,7 @@ function parseCliArguments() {
     inputs,
     headed: values.headed ?? false,
     outputPath: values.output,
+    approveIrreversible: values['approve-irreversible'] ?? false,
   };
 }
 
@@ -107,7 +110,10 @@ async function main(): Promise<void> {
     slowMo: args.headed ? 500 : 0,
   });
   const page = await browser.newPage();
-  const surface = new PlaywrightSurface(page);
+  const redactionPolicy = redactionPolicyFor(capability);
+  const surface = new PlaywrightSurface(page, {
+    redactedFieldNames: redactionPolicy.redactedFieldNames,
+  });
 
   try {
     const runId = crypto.randomUUID();
@@ -121,16 +127,17 @@ async function main(): Promise<void> {
       surface,
       inputs: args.inputs,
       runId,
+      approveIrreversible: args.approveIrreversible,
       async onEntry(entry) {
         if (entry.entryType !== 'action' && entry.entryType !== 'assertion') return;
-        frames.push(await page.screenshot({ fullPage: true }));
+        frames.push(await surface.screenshot());
       },
     });
 
     // Never write a credential to disk. discover.ts has always done this; this
     // path did not, and a real replay of the member lookup saved the password
     // as readable text.
-    const runLog = redactRunLog(recordedRunLog, redactionPolicyFor(capability));
+    const runLog = redactRunLog(recordedRunLog, redactionPolicy);
     const json = JSON.stringify(runLog, null, 2);
 
     // Filed under the outcome so a curated evidence folder shows a success, a
@@ -160,7 +167,10 @@ async function main(): Promise<void> {
 
     console.log(json);
 
-    const exitCode = runLog.outcome?.classification === 'success' ? 0 : 1;
+    // A recovered run reached its outputs; from the caller's side that is a
+    // success that had to work for it, not a failure.
+    const classification = runLog.outcome?.classification;
+    const exitCode = classification === 'success' || classification === 'recovered' ? 0 : 1;
     process.exit(exitCode);
   } finally {
     await page.close();

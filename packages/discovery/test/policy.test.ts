@@ -83,6 +83,7 @@ const basePolicy: Policy = {
     { actionClass: 'mutate', decision: 'confirm' },
   ],
   redactedFieldNames: [],
+  irreversibleControlLabels: ['post', 'transfer', 'confirm'],
   redactedPatterns: [],
   maxStepsPerRun: 30,
 };

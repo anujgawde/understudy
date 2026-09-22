@@ -22,13 +22,15 @@ function parseCliArguments() {
       provider: { type: 'string', short: 'p', default: 'gemini' },
       model: { type: 'string', short: 'm' },
       maxSteps: { type: 'string', short: 's' },
+      'allow-mutations': { type: 'boolean', default: false },
     },
   });
 
   const goal = positionals[0];
   if (!goal) {
     console.error(
-      'Usage: discover <goal> [--provider gemini|anthropic|ollama] [--url http://...] [--headed] [--output dir] [--model model-id] [--maxSteps n]',
+      'Usage: discover <goal> [--provider gemini|anthropic|ollama] [--url http://...] [--headed] ' +
+        '[--output dir] [--model model-id] [--maxSteps n] [--allow-mutations]',
     );
     process.exit(1);
   }
@@ -49,7 +51,43 @@ function parseCliArguments() {
     outputDirectory: values.output ?? 'evidence',
     modelId: values.model,
     maxSteps: values.maxSteps ? parseInt(values.maxSteps, 10) : undefined,
+    allowMutations: values['allow-mutations'] ?? false,
   };
+}
+
+/**
+ * Asks the operator, once per mutating action, on a terminal a person is
+ * actually sitting at. Without one there is nobody to ask, and the honest
+ * answer to a question nobody heard is no — so an unattended run refuses the
+ * action and tells the model to find another way, rather than assuming consent
+ * from the absence of an objection.
+ */
+async function confirmOnTerminal(request: {
+  action: { actionType: string };
+  actionClass: string;
+  reason: string;
+}): Promise<boolean> {
+  if (!process.stdin.isTTY) {
+    console.error(
+      `  [policy] denied ${request.actionClass} (${request.action.actionType}): no terminal to ask on. ` +
+        'Pass --allow-mutations to approve mutating actions up front.',
+    );
+    return false;
+  }
+
+  const { createInterface } = await import('node:readline/promises');
+  const terminal = createInterface({ input: process.stdin, output: process.stderr });
+
+  try {
+    const answer = await terminal.question(
+      `  [policy] ${request.action.actionType} is a ${request.actionClass} action — ${request.reason}. Allow it? [y/N] `,
+    );
+    const approved = answer.trim().toLowerCase().startsWith('y');
+    console.error(`  [policy] operator ${approved ? 'approved' : 'rejected'} the action`);
+    return approved;
+  } finally {
+    terminal.close();
+  }
 }
 
 /**
@@ -127,11 +165,12 @@ async function main(): Promise<void> {
   const capabilityDirectory = join(args.outputDirectory, capabilityId);
   const discoveryDirectory = join(capabilityDirectory, 'discovery');
 
+  const policy = defaultPolicy(args.startUrl, args.maxSteps ?? 30, args.allowMutations);
+
   const surface = new PlaywrightSurface(page, {
     screenshotDirectory: join(discoveryDirectory, 'screenshots'),
+    redactedFieldNames: policy.redactedFieldNames,
   });
-
-  const policy = defaultPolicy(args.startUrl, args.maxSteps ?? 30);
 
   try {
     const { runLog: recordedRunLog } = await discover({
@@ -141,6 +180,7 @@ async function main(): Promise<void> {
       modelProvider,
       policy,
       maxSteps: args.maxSteps,
+      onConfirmAction: confirmOnTerminal,
       onEntry(entry) {
         const line = formatEntryForConsole(entry, policy);
         if (line) console.error(line);

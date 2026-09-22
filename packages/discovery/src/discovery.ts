@@ -12,6 +12,7 @@ import type {
   RunLog,
   RunLogEntry,
 } from '@understudy/schemas';
+import { namesIrreversibleControl } from '@understudy/schemas';
 import type { Surface } from '@understudy/surface';
 import { buildSystemPrompt } from './prompt.js';
 import { discoveryTools } from './tools.js';
@@ -22,15 +23,49 @@ import type {
   ToolCallResult,
 } from './types.js';
 
-function classifyAction(action: Action): ActionClass {
+/**
+ * What the action can commit, which is the question the allowlist is actually
+ * asking. Classifying every click as a read was the hole: "Post Transaction"
+ * and "Back to Search" are the same DOM event and could not be more different,
+ * and only the first one needs asking about.
+ *
+ * A fill stays a mutation. It looks inert, but on the server-rendered admin
+ * screens this system targets a field can post back as it loses focus, and a
+ * staged amount or account number is a change waiting to be committed either
+ * way. Treating it as a read to match the click fix would trade one wrong
+ * default for another, in the unsafe direction.
+ */
+function classifyAction(action: Action, policy: Policy | undefined, label: string | undefined): ActionClass {
   switch (action.actionType) {
     case 'navigate':
       return 'navigate';
     case 'click':
-      return 'read';
+      return policy && namesIrreversibleControl(policy, [label]) ? 'mutate' : 'read';
     case 'fill':
       return 'mutate';
   }
+}
+
+// The names the latest observation knows this element by, which is where the
+// evidence that a button commits something actually lives.
+function elementNames(entries: RunLogEntry[], elementRef: string | undefined): string | undefined {
+  if (elementRef === undefined) return undefined;
+
+  for (let index = entries.length - 1; index >= 0; index--) {
+    const entry = entries[index];
+    if (entry?.entryType !== 'observation') continue;
+
+    const element = entry.observation.elements.find(
+      (candidate) => candidate.elementRef === elementRef,
+    );
+    if (!element) return undefined;
+
+    return [element.accessibleName, element.domId, element.testId, ...(element.nearbyText ?? [])]
+      .filter(Boolean)
+      .join(' ');
+  }
+
+  return undefined;
 }
 
 function checkPolicy(
@@ -369,7 +404,11 @@ async function handleAct(
     };
   }
 
-  const actionClass = classifyAction(action);
+  const actionClass = classifyAction(
+    action,
+    policy,
+    elementNames(entries, toolCall.input['elementRef'] as string | undefined),
+  );
 
   if (policy) {
     const policyResult = checkPolicy(policy, action, actionClass);

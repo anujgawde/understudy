@@ -18,6 +18,7 @@ function parseCliArguments() {
       output: { type: 'string', short: 'o', default: 'evidence' },
       provider: { type: 'string', short: 'p', default: 'gemini' },
       model: { type: 'string', short: 'm' },
+      'approve-irreversible': { type: 'boolean', default: false },
     },
   });
 
@@ -25,7 +26,7 @@ function parseCliArguments() {
   if (!goal) {
     console.error(
       'Usage: task <goal> [--input key=value ...] [--provider gemini|anthropic|ollama] ' +
-        '[--url http://...] [--headed] [--output dir] [--model model-id]',
+        '[--url http://...] [--headed] [--output dir] [--model model-id] [--approve-irreversible]',
     );
     process.exit(1);
   }
@@ -54,6 +55,7 @@ function parseCliArguments() {
     headed: values.headed ?? false,
     outputDirectory: values.output ?? 'evidence',
     modelId: values.model,
+    approveIrreversible: values['approve-irreversible'] ?? false,
   };
 }
 
@@ -174,6 +176,7 @@ async function main(): Promise<void> {
       chosen.path,
       ...Object.entries(inputs).flatMap(([name, value]) => ['--input', `${name}=${value}`]),
       ...(args.headed ? ['--headed'] : []),
+      ...(args.approveIrreversible ? ['--approve-irreversible'] : []),
     ]),
   );
 }
