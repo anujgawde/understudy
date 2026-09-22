@@ -295,6 +295,58 @@ function escapeHtml(s: string): string {
     .replace(/"/g, '&quot;');
 }
 
+/**
+ * The record exists, the operator is simply not entitled to it. Worded so the
+ * page says which member was refused and why — a capability's outcome rule
+ * matches on this text, and a generic "access denied" would be indistinguishable
+ * from any other refusal in the app.
+ */
+export function accessDeniedPage(memberNumber: string): string {
+  return `
+    <div class="ctl00_Panel">
+      <div class="ctl00_Panel_Head">ACCESS DENIED</div>
+      <div class="ctl00_Panel_Body">
+        <table class="ctl00_MemberInfo">
+          <tr>
+            <td class="ctl00_MemberInfo_Label">Member No:</td>
+            <td>${escapeHtml(memberNumber)}</td>
+          </tr>
+          <tr>
+            <td class="ctl00_MemberInfo_Label">Status:</td>
+            <td><strong>SEC-MBR-004:</strong> You are not authorized to view this record.</td>
+          </tr>
+        </table>
+        <p style="font-size:11px; margin-top:8px">
+          This member is flagged as restricted. Contact your branch security administrator to
+          request access.
+        </p>
+        <form method="POST" action="/members/search" style="display:inline">
+          <input type="submit" value="&laquo; Back to Search" id="ctl00_ContentMain_btnBack" class="ctl00_Btn" />
+        </form>
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * Served with a 500. Deliberately looks like an ordinary page: every assertion
+ * a checkpoint could make about it would pass or fail for the wrong reason,
+ * which is why replay judges this one on the response status instead.
+ */
+export function applicationErrorPage(): string {
+  return `
+    <div class="ctl00_Panel">
+      <div class="ctl00_Panel_Head">SYSTEM ERROR</div>
+      <div class="ctl00_Panel_Body">
+        <p style="font-size:11px; margin:0">
+          <strong>SYS-ERR-500:</strong> An unexpected error occurred while retrieving this record.
+          Reference ID 8814-AC. Please try again later.
+        </p>
+      </div>
+    </div>
+  `;
+}
+
 export function loginPage(opts: { error?: string; expired?: boolean } = {}): string {
   const errorBlock = opts.expired
     ? `<div class="ctl00_Error" style="margin-bottom:14px">
@@ -642,7 +694,11 @@ export function memberDetailPage(
       status: 'Open' | 'Closed';
     }>;
   },
-  options?: { shareSummaryDelayMilliseconds?: number },
+  options?: {
+    shareSummaryDelayMilliseconds?: number;
+    confirmDialogMessage?: string;
+    maintenanceNotice?: boolean;
+  },
 ): string {
   const now = new Date();
   const asOf = `${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
@@ -676,10 +732,16 @@ export function memberDetailPage(
   // which is the ordinary shape of a grid that fetches after render. A replay
   // whose wait condition is satisfied by the frame still reads the rows too
   // early, and that is the condition the read-only retry exists to clear.
+  // A maintenance notice withholds the rows the same way the slow grid does.
+  // Leaving them in the DOM behind an overlay would let a replay that ignored
+  // the notice read them anyway, which would make dismissing it optional and
+  // the test meaningless.
+  const withheldForNotice = options?.maintenanceNotice === true;
   const delayMilliseconds = options?.shareSummaryDelayMilliseconds;
-  const initialShareRows = delayMilliseconds
-    ? `<template id="ctl00_ContentMain_tplShareRows">${shareRows}</template>`
-    : shareRows;
+  const initialShareRows =
+    delayMilliseconds || withheldForNotice
+      ? `<template id="ctl00_ContentMain_tplShareRows">${shareRows}</template>`
+      : shareRows;
   const deferredRowsScript = delayMilliseconds
     ? `<script>
          setTimeout(function () {
@@ -772,6 +834,37 @@ export function memberDetailPage(
 
     ${shareSummaryMarkup}
     ${deferredRowsScript}
+    ${
+      withheldForNotice
+        ? `<div id="ctl00_ContentMain_pnlMaintenance" class="ctl00_Panel" style="border:2px solid #8a6d3b; background:#fcf8e3; margin-top:10px">
+             <div class="ctl00_Panel_Head" style="background:#8a6d3b">SCHEDULED MAINTENANCE</div>
+             <div class="ctl00_Panel_Body">
+               <p style="font-size:11px; margin:0 0 8px">
+                 Share balances are being refreshed from the core. Dismiss this notice to continue.
+               </p>
+               <input type="button" value="Dismiss" id="ctl00_ContentMain_btnDismissNotice" class="ctl00_Btn" />
+             </div>
+           </div>
+           <script>
+             document.getElementById('ctl00_ContentMain_btnDismissNotice')
+               .addEventListener('click', function () {
+                 var body = document.getElementById('ctl00_ContentMain_grdShares_body');
+                 var tpl = document.getElementById('ctl00_ContentMain_tplShareRows');
+                 body.innerHTML = tpl.innerHTML;
+                 document.getElementById('ctl00_ContentMain_pnlMaintenance').remove();
+               });
+           </script>`
+        : ''
+    }
+    ${
+      options?.confirmDialogMessage
+        ? `<script>
+             window.addEventListener('DOMContentLoaded', function () {
+               confirm(${JSON.stringify(options.confirmDialogMessage)});
+             });
+           </script>`
+        : ''
+    }
 
     <div style="margin-top:10px">
       <input type="button" value="Open Sub-Account" id="ctl00_ContentMain_btnOpenSub" class="ctl00_Btn" />

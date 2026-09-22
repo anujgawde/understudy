@@ -1,6 +1,13 @@
 import express from 'express';
 import cookieSession from 'cookie-session';
-import { loginPage, chrome, memberSearchPage, memberDetailPage } from './views.js';
+import {
+  loginPage,
+  chrome,
+  memberSearchPage,
+  memberDetailPage,
+  accessDeniedPage,
+  applicationErrorPage,
+} from './views.js';
 import {
   searchMembers,
   findMember,
@@ -8,6 +15,10 @@ import {
   MAGIC_VALIDATION_ERROR,
   MAGIC_SESSION_TIMEOUT,
   MAGIC_SLOW_RENDER,
+  MAGIC_ACCESS_DENIED,
+  MAGIC_APP_ERROR,
+  MAGIC_UNEXPECTED_DIALOG,
+  MAGIC_MAINTENANCE_NOTICE,
   SLOW_RENDER_DELAY_MILLISECONDS,
 } from './data.js';
 
@@ -189,18 +200,55 @@ app.post('/members/detail', requireAuth, (req, res) => {
     return;
   }
 
+  // Before the record is looked up: the point is that the operator is refused
+  // the record, not that the record is missing.
+  if (memberNumber === MAGIC_ACCESS_DENIED) {
+    res.type('html').send(
+      chrome({
+        title: 'Access Denied',
+        breadcrumb: 'Home &rsaquo; Member Services &rsaquo; Member Search &rsaquo; Access Denied',
+        activeNav: 'detail',
+        activeTab: 'members',
+        content: accessDeniedPage(memberNumber),
+        user: getSession(req).user!,
+      }),
+    );
+    return;
+  }
+
+  if (memberNumber === MAGIC_APP_ERROR) {
+    res
+      .status(500)
+      .type('html')
+      .send(
+        chrome({
+          title: 'System Error',
+          breadcrumb: 'Home &rsaquo; Member Services &rsaquo; Member Search',
+          activeNav: 'detail',
+          activeTab: 'members',
+          content: applicationErrorPage(),
+          user: getSession(req).user!,
+        }),
+      );
+    return;
+  }
+
   const member = findMember(memberNumber);
   if (!member) {
     res.redirect('/members/search');
     return;
   }
 
-  const content = memberDetailPage(
-    member,
-    memberNumber === MAGIC_SLOW_RENDER
-      ? { shareSummaryDelayMilliseconds: SLOW_RENDER_DELAY_MILLISECONDS }
-      : undefined,
-  );
+  const content = memberDetailPage(member, {
+    ...(memberNumber === MAGIC_SLOW_RENDER && {
+      shareSummaryDelayMilliseconds: SLOW_RENDER_DELAY_MILLISECONDS,
+    }),
+    ...(memberNumber === MAGIC_UNEXPECTED_DIALOG && {
+      confirmDialogMessage:
+        'This member has a pending dispute. Continue to the account summary?',
+    }),
+    ...(memberNumber === MAGIC_MAINTENANCE_NOTICE && { maintenanceNotice: true }),
+  });
   res.type('html').send(
     chrome({
       title: `Member Detail - ${member.memberNumber}`,

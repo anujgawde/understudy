@@ -146,6 +146,106 @@ const MEMBERS: Member[] = [
       },
     ],
   },
+  {
+    memberNumber: '55555',
+    name: 'OKONKWO, SAMUEL T',
+    ssn: '***-**-7742',
+    dob: '11/30/1975',
+    address: '88 SENTINEL CT',
+    city: 'FISHERS',
+    state: 'IN',
+    zip: '46037',
+    phone: '(317) 555-0144',
+    email: 'sokonkwo@mailhost.net',
+    branch: 'NORTH',
+    memberSince: '06/14/2009',
+    shares: [
+      {
+        id: 'S0001',
+        typeCode: '00',
+        description: 'Regular Share Savings',
+        currentBalance: '8,115.00',
+        availableBalance: '8,115.00',
+        maturityDate: '',
+        status: 'Open',
+      },
+    ],
+  },
+  {
+    memberNumber: '44444',
+    name: 'REYES, CARMEN L',
+    ssn: '***-**-2214',
+    dob: '04/17/1988',
+    address: '2210 KESTREL WAY',
+    city: 'NOBLESVILLE',
+    state: 'IN',
+    zip: '46060',
+    phone: '(317) 555-0177',
+    email: 'creyes@webmail.org',
+    branch: 'EAST',
+    memberSince: '09/23/2016',
+    shares: [
+      {
+        id: 'S0001',
+        typeCode: '00',
+        description: 'Regular Share Savings',
+        currentBalance: '1,204.88',
+        availableBalance: '1,204.88',
+        maturityDate: '',
+        status: 'Open',
+      },
+    ],
+  },
+  {
+    memberNumber: '33333',
+    name: 'HALVORSEN, ERIK J',
+    ssn: '***-**-9083',
+    dob: '02/09/1969',
+    address: '547 GRANITE RIDGE RD',
+    city: 'ZIONSVILLE',
+    state: 'IN',
+    zip: '46077',
+    phone: '(317) 555-0123',
+    email: 'ehalvorsen@mailhost.net',
+    branch: 'WEST',
+    memberSince: '03/11/2004',
+    shares: [
+      {
+        id: 'S0001',
+        typeCode: '00',
+        description: 'Regular Share Savings',
+        currentBalance: '22,047.63',
+        availableBalance: '22,047.63',
+        maturityDate: '',
+        status: 'Open',
+      },
+    ],
+  },
+  {
+    memberNumber: '22222',
+    name: 'NAKAMURA, YUKI',
+    ssn: '***-**-5561',
+    dob: '08/25/1992',
+    address: '31 LANTERN HILL DR',
+    city: 'WESTFIELD',
+    state: 'IN',
+    zip: '46074',
+    phone: '(317) 555-0190',
+    email: 'ynakamura@webmail.org',
+    branch: 'MAIN',
+    memberSince: '01/19/2019',
+    shares: [
+      {
+        id: 'S0001',
+        typeCode: '00',
+        description: 'Regular Share Savings',
+        currentBalance: '3,870.21',
+        availableBalance: '3,870.21',
+        maturityDate: '',
+        status: 'Open',
+      },
+    ],
+  },
 ];
 
 export function findMember(memberNumber: string): Member | undefined {
@@ -176,3 +276,23 @@ export const MAGIC_SESSION_TIMEOUT = '77777';
 // load, so a replay's first checkpoint read misses it and the second finds it.
 export const MAGIC_SLOW_RENDER = '66666';
 export const SLOW_RENDER_DELAY_MILLISECONDS = 1_500;
+
+// The record exists and the operator may not see it. A legitimate negative
+// answer the caller needs, not a malfunction — the same class as not-found, and
+// the reason business outcomes are matched on what the page says rather than on
+// which checkpoint failed.
+export const MAGIC_ACCESS_DENIED = '55555';
+
+// The server itself fails. The error page renders perfectly, which is why this
+// is caught on the response status rather than on anything the page shows.
+export const MAGIC_APP_ERROR = '44444';
+
+// A native confirm() nobody recorded, fired on load. Blocks the page until it
+// is answered, and answering it would be agreeing to something no artifact
+// declared.
+export const MAGIC_UNEXPECTED_DIALOG = '33333';
+
+// A dismissible maintenance notice standing between the flow and its result.
+// The rows are withheld until it is cleared, so a replay that ignores it reads
+// an empty grid rather than quietly succeeding anyway.
+export const MAGIC_MAINTENANCE_NOTICE = '22222';
