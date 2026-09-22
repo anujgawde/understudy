@@ -339,6 +339,11 @@ describe('Runtime conditions during replay', () => {
       expect(runLog.outcome?.classification).toBe('failed');
       if (runLog.outcome?.classification === 'failed') {
         expect(runLog.outcome.failureCode).toBe('assertion_failed');
+
+        // The message has to say what was there, not only what was wanted —
+        // otherwise whoever is debugging starts by reproducing the run.
+        expect(runLog.outcome.message).toContain('expected text');
+        expect(runLog.outcome.message).toContain('but not present anywhere on');
       }
     },
   );
