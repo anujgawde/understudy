@@ -14,6 +14,7 @@ const capability: Capability = {
   steps: [
     {
       stepId: 'click-search',
+      risk: 'reversible',
       action: { actionType: 'click', target: [{ strategy: 'css', selector: '#search' }] },
     },
   ],
@@ -32,6 +33,8 @@ const capability: Capability = {
     },
   ],
   businessOutcomes: [],
+  expectedDialogs: [],
+  interstitials: [],
 };
 
 function respondingWith(outcomes: unknown): ModelProvider {

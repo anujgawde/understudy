@@ -225,6 +225,8 @@ describe('redactCapability', () => {
       checkpoints: [],
       extractions: [],
       businessOutcomes: [],
+      expectedDialogs: [],
+      interstitials: [],
     };
   }
 
@@ -232,6 +234,7 @@ describe('redactCapability', () => {
     const capability = capabilityWith([
       {
         stepId: 'fill-password',
+        risk: 'reversible',
         action: {
           actionType: 'fill',
           target: [{ strategy: 'role', role: 'textbox', accessibleName: 'Password' }],
@@ -250,6 +253,7 @@ describe('redactCapability', () => {
     const capability = capabilityWith([
       {
         stepId: 'fill-password',
+        risk: 'reversible',
         action: {
           actionType: 'fill',
           target: [{ strategy: 'role', role: 'textbox', accessibleName: 'Password' }],

@@ -39,9 +39,10 @@ function makeGuardedCapability(baseUrl: string): Capability {
     inputs: [{ name: 'memberNumber', valueType: 'string', required: true, secret: false }],
     outputs: [],
     steps: [
-      { stepId: 'navigate-to-login', action: { actionType: 'navigate', url: `${baseUrl}/login` } },
+      { stepId: 'navigate-to-login', risk: 'reversible', action: { actionType: 'navigate', url: `${baseUrl}/login` } },
       {
         stepId: 'fill-user-id',
+        risk: 'reversible',
         action: {
           actionType: 'fill',
           target: [{ strategy: 'adjacent', labelText: 'User ID', direction: 'next' }],
@@ -50,6 +51,7 @@ function makeGuardedCapability(baseUrl: string): Capability {
       },
       {
         stepId: 'fill-password',
+        risk: 'reversible',
         action: {
           actionType: 'fill',
           target: [{ strategy: 'adjacent', labelText: 'Password', direction: 'next' }],
@@ -58,6 +60,7 @@ function makeGuardedCapability(baseUrl: string): Capability {
       },
       {
         stepId: 'click-sign-in',
+        risk: 'reversible',
         action: {
           actionType: 'click',
           target: [{ strategy: 'role', role: 'button', accessibleName: 'Sign In' }],
@@ -66,6 +69,7 @@ function makeGuardedCapability(baseUrl: string): Capability {
       },
       {
         stepId: 'fill-member-number',
+        risk: 'reversible',
         action: {
           actionType: 'fill',
           target: [{ strategy: 'css', selector: '#ctl00_ContentMain_txtMbrNo' }],
@@ -74,6 +78,7 @@ function makeGuardedCapability(baseUrl: string): Capability {
       },
       {
         stepId: 'click-search',
+        risk: 'reversible',
         action: {
           actionType: 'click',
           target: [{ strategy: 'css', selector: '#ctl00_ContentMain_btnSearch' }],
@@ -90,6 +95,8 @@ function makeGuardedCapability(baseUrl: string): Capability {
     ],
     extractions: [],
     businessOutcomes: [],
+    expectedDialogs: [],
+    interstitials: [],
   };
 }
 
@@ -195,6 +202,7 @@ describe('Session expiry detection', () => {
           capability.steps[0]!,
           {
             stepId: 'click-absent-control',
+            risk: 'reversible',
             action: {
               actionType: 'click',
               target: [{ strategy: 'css', selector: '#no-such-control' }],
@@ -224,6 +232,7 @@ describe('Session expiry detection', () => {
           ...capability.steps.slice(0, 4),
           {
             stepId: 'click-absent-control',
+            risk: 'reversible',
             action: {
               actionType: 'click',
               target: [{ strategy: 'css', selector: '#no-such-control' }],
@@ -257,6 +266,8 @@ describe('Session expiry detection', () => {
             condition: { when: 'checkpoint_failed', checkpointId: 'results-shown' },
           },
         ],
+        expectedDialogs: [],
+        interstitials: [],
       },
       surface,
       inputs: { memberNumber: '99999' },

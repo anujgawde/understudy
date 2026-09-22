@@ -40,10 +40,12 @@ function makeLookupCapability(baseUrl: string): Capability {
     steps: [
       {
         stepId: 'navigate-to-login',
+        risk: 'reversible',
         action: { actionType: 'navigate', url: `${baseUrl}/login` },
       },
       {
         stepId: 'fill-user-id',
+        risk: 'reversible',
         action: {
           actionType: 'fill',
           target: [{ strategy: 'adjacent', labelText: 'User ID', direction: 'next' }],
@@ -52,6 +54,7 @@ function makeLookupCapability(baseUrl: string): Capability {
       },
       {
         stepId: 'fill-password',
+        risk: 'reversible',
         action: {
           actionType: 'fill',
           target: [{ strategy: 'adjacent', labelText: 'Password', direction: 'next' }],
@@ -60,6 +63,7 @@ function makeLookupCapability(baseUrl: string): Capability {
       },
       {
         stepId: 'click-sign-in',
+        risk: 'reversible',
         action: {
           actionType: 'click',
           target: [{ strategy: 'role', role: 'button', accessibleName: 'Sign In' }],
@@ -68,6 +72,7 @@ function makeLookupCapability(baseUrl: string): Capability {
       },
       {
         stepId: 'fill-member-number',
+        risk: 'reversible',
         action: {
           actionType: 'fill',
           target: [{ strategy: 'css', selector: '#ctl00_ContentMain_txtMbrNo' }],
@@ -76,6 +81,7 @@ function makeLookupCapability(baseUrl: string): Capability {
       },
       {
         stepId: 'click-search',
+        risk: 'reversible',
         action: {
           actionType: 'click',
           target: [{ strategy: 'css', selector: '#ctl00_ContentMain_btnSearch' }],
@@ -84,6 +90,7 @@ function makeLookupCapability(baseUrl: string): Capability {
       },
       {
         stepId: 'click-member-row',
+        risk: 'reversible',
         action: {
           actionType: 'click',
           target: [{ strategy: 'text', text: 'JOHNSON, MARGARET A' }],
@@ -94,6 +101,8 @@ function makeLookupCapability(baseUrl: string): Capability {
     checkpoints: [],
     extractions: [],
     businessOutcomes: [],
+    expectedDialogs: [],
+    interstitials: [],
   };
 }
 
@@ -275,10 +284,12 @@ describe('Executor', () => {
       steps: [
         {
           stepId: 'navigate',
+          risk: 'reversible',
           action: { actionType: 'navigate', url: `${BASE_URL}/login` },
         },
         {
           stepId: 'click-ghost',
+          risk: 'reversible',
           action: {
             actionType: 'click',
             target: [
@@ -291,6 +302,8 @@ describe('Executor', () => {
       checkpoints: [],
       extractions: [],
       businessOutcomes: [],
+      expectedDialogs: [],
+      interstitials: [],
     };
 
     const { runLog } = await execute({ capability, surface, inputs: {} });
@@ -322,6 +335,7 @@ describe('Executor', () => {
       steps: [
         {
           stepId: 'fill-something',
+          risk: 'reversible',
           action: {
             actionType: 'fill',
             target: [{ strategy: 'css', selector: '#anything' }],
@@ -332,6 +346,8 @@ describe('Executor', () => {
       checkpoints: [],
       extractions: [],
       businessOutcomes: [],
+      expectedDialogs: [],
+      interstitials: [],
     };
 
     await expect(
@@ -353,12 +369,15 @@ describe('Executor', () => {
       steps: [
         {
           stepId: 'navigate',
+          risk: 'reversible',
           action: { actionType: 'navigate', url: `${BASE_URL}/login` },
         },
       ],
       checkpoints: [],
       extractions: [],
       businessOutcomes: [],
+      expectedDialogs: [],
+      interstitials: [],
     };
 
     const { runLog } = await execute({
@@ -827,10 +846,12 @@ describe('Executor', () => {
       steps: [
         {
           stepId: 'navigate',
+          risk: 'reversible',
           action: { actionType: 'navigate', url: `${BASE_URL}/login` },
         },
         {
           stepId: 'never-reached',
+          risk: 'reversible',
           action: { actionType: 'navigate', url: `${BASE_URL}/login` },
         },
       ],
@@ -845,6 +866,8 @@ describe('Executor', () => {
       ],
       extractions: [],
       businessOutcomes: [],
+      expectedDialogs: [],
+      interstitials: [],
     };
 
     const { runLog } = await execute({ capability, surface, inputs: {} });
@@ -872,10 +895,12 @@ describe('Executor', () => {
       steps: [
         {
           stepId: 'step-1-ok',
+          risk: 'reversible',
           action: { actionType: 'navigate', url: `${BASE_URL}/login` },
         },
         {
           stepId: 'step-2-fails',
+          risk: 'reversible',
           action: {
             actionType: 'click',
             target: [{ strategy: 'css', selector: '#does_not_exist' }],
@@ -883,12 +908,15 @@ describe('Executor', () => {
         },
         {
           stepId: 'step-3-never-reached',
+          risk: 'reversible',
           action: { actionType: 'navigate', url: `${BASE_URL}/login` },
         },
       ],
       checkpoints: [],
       extractions: [],
       businessOutcomes: [],
+      expectedDialogs: [],
+      interstitials: [],
     };
 
     const { runLog } = await execute({ capability, surface, inputs: {} });
