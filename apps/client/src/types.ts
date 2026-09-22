@@ -38,9 +38,18 @@ export type FailureCode =
   | 'type_coercion_failed'
   | 'navigation_failed'
   | 'session_expired'
+  | 'unexpected_dialog'
+  | 'app_error'
+  | 'approval_required'
   | 'policy_denied'
   | 'timeout'
   | 'step_budget_exhausted';
+
+export interface Recovery {
+  kind: 'retried_read' | 'dismissed_interstitial';
+  atStepId?: string;
+  detail: string;
+}
 
 export interface CapabilityField {
   name: string;
@@ -55,6 +64,7 @@ export interface Step {
   action: Action;
   waitFor?: WaitCondition;
   description?: string;
+  risk?: 'reversible' | 'irreversible';
 }
 
 export interface Checkpoint {
@@ -66,6 +76,7 @@ export interface Checkpoint {
 export interface BusinessOutcomeRule {
   code: string;
   message: string;
+  signal: Assertion;
   condition:
     | { when: 'step_failed'; stepId: string; failureCode: FailureCode }
     | { when: 'checkpoint_failed'; checkpointId: string };
@@ -83,6 +94,8 @@ export interface Capability {
   checkpoints: Checkpoint[];
   extractions: Array<{ outputName: string; target: LocatorLadder; valueType: ValueType }>;
   businessOutcomes: BusinessOutcomeRule[];
+  expectedDialogs?: string[];
+  interstitials?: Array<{ name: string; when: Assertion; dismiss: LocatorLadder }>;
   provenance?: {
     discoveredByModel: string;
     discoveryRunId: string;
@@ -101,6 +114,7 @@ export type Outcome =
       classification: 'recovered';
       recoveredFrom: FailureCode;
       attempts: number;
+      recoveries?: Recovery[];
       outputs: Record<string, unknown>;
     }
   | {

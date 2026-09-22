@@ -158,6 +158,7 @@ export const capabilities: Capability[] = [
       {
         code: 'member_not_found',
         message: 'No member matched the supplied number',
+        signal: { assert: 'text_present', text: 'No records matched' },
         condition: { when: 'checkpoint_failed', checkpointId: 'on-detail-page' },
       },
     ],
