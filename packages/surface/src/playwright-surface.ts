@@ -69,6 +69,10 @@ export class PlaywrightSurface implements Surface {
     return this.documentStatus;
   }
 
+  clearResponseStatus(): void {
+    this.documentStatus = undefined;
+  }
+
   async observe(): Promise<Observation> {
     const [url, pageTitle, rawElements] = await Promise.all([
       Promise.resolve(this.page.url()),

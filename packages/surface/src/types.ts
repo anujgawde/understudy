@@ -33,6 +33,10 @@ export interface Surface {
   // that no assertion about page content can tell you about reliably, because
   // the error page renders perfectly well.
   lastResponseStatus(): number | undefined;
+  // Cleared at the start of a run. Without this a surface reused across runs
+  // carries the previous one's status, and a resumed run — which has no opening
+  // navigation to refresh it — can be failed for someone else's 500.
+  clearResponseStatus(): void;
 }
 
 export interface RawObservedElement {

@@ -646,6 +646,7 @@ function buildOutcome(
         classification: 'failed',
         failureCode: 'step_budget_exhausted',
         message: 'Discovery stopped: step budget exhausted before the model called finish.',
+        recoveries: [],
         interventionRaised: false,
       };
     }
@@ -653,6 +654,7 @@ function buildOutcome(
       classification: 'failed',
       failureCode: 'timeout',
       message: 'Discovery ended without the model calling finish.',
+      recoveries: [],
       interventionRaised: false,
     };
   }

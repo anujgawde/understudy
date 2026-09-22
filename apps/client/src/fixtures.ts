@@ -415,6 +415,7 @@ export const runs: RunLog[] = [
       message:
         'Session expired mid-flow and the login frame replaced the content frame. Not a declared outcome, so replay halted rather than clicking blindly into an authentication screen. An intervention was raised automatically.',
       failedAtStepId: 'click-member-row',
+      recoveries: [],
       interventionRaised: true,
     },
   },

@@ -42,6 +42,7 @@ function runLogOf(
             classification: 'failed',
             failureCode: 'step_budget_exhausted',
             message: 'ran out of steps',
+            recoveries: [],
             interventionRaised: false,
           },
   };

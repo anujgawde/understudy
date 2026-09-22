@@ -308,6 +308,7 @@ describe('Runtime conditions during replay', () => {
             name: 'scheduled maintenance',
             when: { assert: 'text_present', text: 'SCHEDULED MAINTENANCE' },
             dismiss: [{ strategy: 'css', selector: '#ctl00_ContentMain_btnDismissNotice' }],
+            risk: 'reversible' as const,
           },
         ],
       },

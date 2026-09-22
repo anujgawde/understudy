@@ -293,7 +293,8 @@
           "strategy": "css",
           "selector": "#ctl00_ContentMain_btnDismissNotice"
         }
-      ]
+      ],
+      "risk": "reversible"
     }
   ]
 }

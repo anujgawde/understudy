@@ -51,6 +51,10 @@ export const Outcome = z.discriminatedUnion('classification', [
     failureCode: FailureCode,
     message: z.string().min(1),
     failedAtStepId: z.string().min(1).optional(),
+    // A run can clear one condition and then die on another. Dropping the
+    // first would hide that the page needed handling before it broke, which is
+    // exactly the context someone debugging the second one wants.
+    recoveries: z.array(Recovery).default([]),
     interventionRaised: z.boolean(),
   }),
 ]);

@@ -77,21 +77,50 @@ function describeAssertion(assertion: Assertion): string {
   }
 }
 
-async function evaluateAssertion(assertion: Assertion, surface: Surface): Promise<boolean> {
+/**
+ * An assertion result carries what the page actually showed, not just whether
+ * it agreed. "Expected X to be present" leaves whoever is debugging to go and
+ * find out what was there instead; the brief asks the result to say what step,
+ * what was expected, and what was observed, and the third one is the only part
+ * that shortens the investigation.
+ */
+async function evaluateAssertion(
+  assertion: Assertion,
+  surface: Surface,
+): Promise<{ passed: boolean; observed: string }> {
+  const url = await surface.pageUrl().catch(() => 'an unknown page');
+
   switch (assertion.assert) {
-    case 'text_present':
-      return surface.hasText(assertion.text);
-    case 'text_absent':
-      return !(await surface.hasText(assertion.text));
-    case 'element_present':
+    case 'text_present': {
+      const passed = await surface.hasText(assertion.text);
+      return {
+        passed,
+        observed: passed ? `found on ${url}` : `not present anywhere on ${url}`,
+      };
+    }
+    case 'text_absent': {
+      const present = await surface.hasText(assertion.text);
+      return {
+        passed: !present,
+        observed: present ? `still present on ${url}` : `absent from ${url}`,
+      };
+    }
+    case 'element_present': {
       try {
-        await surface.resolve(assertion.target);
-        return true;
+        const { rungIndex, rung, matchCount } = await surface.resolve(assertion.target);
+        return {
+          passed: true,
+          observed: `matched ${matchCount} element(s) on rung ${rungIndex} (${rung.strategy})`,
+        };
       } catch {
-        return false;
+        const tried = assertion.target.map((rung) => rung.strategy).join(', ');
+        return { passed: false, observed: `no element matched any rung (tried: ${tried}) on ${url}` };
       }
-    case 'url_matches':
-      return new RegExp(assertion.pattern).test(await surface.pageUrl());
+    }
+    case 'url_matches': {
+      const passed = new RegExp(assertion.pattern).test(url);
+      return { passed, observed: `url was ${url}` };
+    }
   }
 }
 
@@ -129,10 +158,11 @@ function coerceValue(
 async function evaluateCheckpoint(
   checkpoint: Checkpoint,
   surface: Surface,
-): Promise<{ passed: boolean; failedAssertion?: Assertion }> {
+): Promise<{ passed: boolean; failedAssertion?: Assertion; observed?: string }> {
   for (const assertion of checkpoint.allOf) {
-    if (!(await evaluateAssertion(assertion, surface))) {
-      return { passed: false, failedAssertion: assertion };
+    const result = await evaluateAssertion(assertion, surface);
+    if (!result.passed) {
+      return { passed: false, failedAssertion: assertion, observed: result.observed };
     }
   }
   return { passed: true };
@@ -150,11 +180,13 @@ async function evaluateCheckpoint(
 async function dismissInterstitials(
   capability: Capability,
   surface: Surface,
+  approveIrreversible: boolean,
 ): Promise<string[]> {
   const dismissed: string[] = [];
 
   for (const interstitial of capability.interstitials ?? []) {
-    if (!(await evaluateAssertion(interstitial.when, surface))) continue;
+    if (interstitial.risk === 'irreversible' && !approveIrreversible) continue;
+    if (!(await evaluateAssertion(interstitial.when, surface)).passed) continue;
 
     try {
       await surface.act({ actionType: 'click', target: interstitial.dismiss });
@@ -194,7 +226,7 @@ export async function reassert(
     if (!result.passed) {
       return {
         held: false,
-        reason: `checkpoint "${checkpoint.checkpointId}" no longer holds: ${describeAssertion(result.failedAssertion!)}`,
+        reason: `checkpoint "${checkpoint.checkpointId}" no longer holds: ${describeAssertion(result.failedAssertion!)}, but ${result.observed}`,
         checkpointId: checkpoint.checkpointId,
       };
     }
@@ -219,8 +251,10 @@ export async function execute(options: ExecutorOptions): Promise<ExecutorResult>
   const terminal: TerminalState = { completedAllSteps: true, outputs: {}, recoveries };
 
   // Anything left over belongs to whatever ran before this. A run is answerable
-  // for the dialogs it raised, not for one it inherited.
+  // for the dialogs it raised and the responses it provoked, not for ones it
+  // inherited from the run before it on the same surface.
   await surface.drainDialogs();
+  surface.clearResponseStatus();
   let lastSuccessfulStepId: string | undefined;
   let clearedAuth = false;
   let stepsToRun = capability.steps;
@@ -402,7 +436,11 @@ export async function execute(options: ExecutorOptions): Promise<ExecutorResult>
       // sitting over the result is cleared and the checkpoint re-read at once;
       // only if that was not it does the run pay for the wait.
       if (!result.passed) {
-        const dismissed = await dismissInterstitials(capability, surface);
+        const dismissed = await dismissInterstitials(
+          capability,
+          surface,
+          options.approveIrreversible ?? false,
+        );
 
         for (const name of dismissed) {
           const recovery = {
@@ -477,7 +515,7 @@ export async function execute(options: ExecutorOptions): Promise<ExecutorResult>
         terminal.completedAllSteps = false;
         terminal.failedAtStepId = step.stepId;
         terminal.failureCode = 'assertion_failed';
-        terminal.failureMessage = `Checkpoint "${checkpoint.checkpointId}" failed: ${failedDescription}`;
+        terminal.failureMessage = `Checkpoint "${checkpoint.checkpointId}" failed: ${failedDescription}, but ${result.observed}`;
         terminal.failedCheckpointId = checkpoint.checkpointId;
         break;
       }
@@ -577,7 +615,7 @@ export async function execute(options: ExecutorOptions): Promise<ExecutorResult>
     for (const rule of capability.businessOutcomes ?? []) {
       if (!conditionMatches(rule, terminal)) continue;
 
-      const signalPresent = await evaluateAssertion(rule.signal, surface);
+      const { passed: signalPresent } = await evaluateAssertion(rule.signal, surface);
 
       await record({
         entryType: 'outcome_rule',

@@ -25,6 +25,7 @@ describe('Outcome', () => {
         failureCode: 'session_expired',
         message: 'Session timed out before the detail page loaded',
         failedAtStepId: 'open-member-detail',
+        recoveries: [],
         interventionRaised: true,
       }),
     ).toBeTruthy();
@@ -44,6 +45,7 @@ describe('Outcome', () => {
       classification: 'failed',
       failureCode: 'something_unexpected',
       message: 'boom',
+      recoveries: [],
       interventionRaised: false,
     };
     expect(Outcome.safeParse(invalid).success).toBe(false);

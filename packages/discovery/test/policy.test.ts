@@ -31,6 +31,7 @@ function makeSurface(): Surface {
     hasText: vi.fn().mockResolvedValue(false),
     drainDialogs: vi.fn().mockResolvedValue([]),
     lastResponseStatus: vi.fn().mockReturnValue(200),
+    clearResponseStatus: vi.fn(),
   };
 }
 

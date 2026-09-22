@@ -61,6 +61,7 @@ export function classify(
     failureCode: state.failureCode!,
     message: state.failureMessage ?? `Step "${state.failedAtStepId}" failed`,
     failedAtStepId: state.failedAtStepId,
+    recoveries: state.recoveries ?? [],
     interventionRaised: false,
   };
 }

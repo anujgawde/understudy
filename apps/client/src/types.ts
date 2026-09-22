@@ -122,6 +122,7 @@ export type Outcome =
       failureCode: FailureCode;
       message: string;
       failedAtStepId?: string;
+      recoveries?: Recovery[];
       interventionRaised: boolean;
     };
 

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { LocatorLadder } from './locator';
 import { FailureCode } from './outcome';
-import { Step } from './step';
+import { Step, StepRisk } from './step';
 
 export const ValueType = z.enum(['string', 'number', 'boolean', 'date']);
 export type ValueType = z.infer<typeof ValueType>;
@@ -95,6 +95,10 @@ export const Capability = z
           name: z.string().min(1),
           when: Assertion,
           dismiss: LocatorLadder,
+          // Dismissing is a click like any other. A notice whose only control
+          // also commits something is not something replay may press on its
+          // own, so the declaration carries the same risk the steps do.
+          risk: StepRisk.default('reversible'),
         }),
       )
       .default([]),
