@@ -91,11 +91,19 @@ function checkPolicy(
 ): { decision: PolicyDecision; reason: string } {
   if (action.actionType === 'navigate') {
     try {
-      const targetOrigin = new URL(action.url).origin;
-      if (!policy.allowedOrigins.some((allowed) => new URL(allowed).origin === targetOrigin)) {
+      const target = new URL(action.url);
+      if (!policy.allowedOrigins.some((allowed) => new URL(allowed).origin === target.origin)) {
         return {
           decision: 'deny',
-          reason: `Navigation to ${targetOrigin} is outside the allowed origins`,
+          reason: `Navigation to ${target.origin} is outside the allowed origins`,
+        };
+      }
+
+      const prefixes = policy.allowedPathPrefixes ?? [];
+      if (prefixes.length > 0 && !prefixes.some((prefix) => target.pathname.startsWith(prefix))) {
+        return {
+          decision: 'deny',
+          reason: `Navigation to ${target.pathname} is outside the allowed routes (${prefixes.join(', ')})`,
         };
       }
     } catch {
@@ -191,6 +199,9 @@ export async function discover(options: DiscoveryOptions): Promise<DiscoveryResu
   const { goal, startUrl, surface, modelProvider, policy, onEntry, onConfirmAction } = options;
   const inputs = options.inputs ?? {};
   const maxSteps = options.maxSteps ?? policy?.maxStepsPerRun ?? 30;
+  // A step that hangs is a different stopping condition from a model that
+  // wanders: the budget counts attempts, this bounds the time they may take.
+  const deadline = Date.now() + (policy?.maxRunSeconds ?? 600) * 1000;
   const runId = crypto.randomUUID();
   const startedAt = new Date().toISOString();
   const entries: RunLogEntry[] = [];
@@ -246,7 +257,21 @@ export async function discover(options: DiscoveryOptions): Promise<DiscoveryResu
     content: `I have navigated to the starting page. Here is the initial observation:\n\n${formatObservation(startObservation)}`,
   });
 
+  let ranOutOfTime = false;
+
   while (stepCount < maxSteps && finishPayload === null) {
+    if (Date.now() > deadline) {
+      ranOutOfTime = true;
+      addEntry({
+        entryType: 'rationale',
+        sequence: sequence++,
+        occurredAt: new Date().toISOString(),
+        actor: 'system',
+        text: `Time budget exhausted (${policy?.maxRunSeconds ?? 600}s). Stopping discovery.`,
+      });
+      break;
+    }
+
     const turn = await modelProvider.completeWithTools({
       system: systemPrompt,
       messages,
@@ -321,7 +346,7 @@ export async function discover(options: DiscoveryOptions): Promise<DiscoveryResu
     });
   }
 
-  const outcome = buildOutcome(finishPayload, stepCount >= maxSteps);
+  const outcome = buildOutcome(finishPayload, stepCount >= maxSteps, ranOutOfTime);
 
   const runLog: RunLog = {
     runId,
@@ -639,8 +664,20 @@ function handleFinish(
 function buildOutcome(
   finishPayload: FinishPayload | null,
   budgetExhausted: boolean,
+  ranOutOfTime: boolean,
 ): RunLog['outcome'] {
   if (finishPayload === null) {
+    // Two different ways to run out, reported apart because they call for
+    // different responses: a bigger budget, or a look at what was hanging.
+    if (ranOutOfTime) {
+      return {
+        classification: 'failed',
+        failureCode: 'timeout',
+        message: 'Discovery stopped: the run exceeded its time budget before the model called finish.',
+        recoveries: [],
+        interventionRaised: false,
+      };
+    }
     if (budgetExhausted) {
       return {
         classification: 'failed',

@@ -12,6 +12,8 @@ const policy: Policy = {
   irreversibleControlLabels: ['post', 'transfer', 'confirm'],
   redactedPatterns: ['\\b\\d{3}-\\d{2}-\\d{4}\\b'],
   maxStepsPerRun: 30,
+  allowedPathPrefixes: [],
+  maxRunSeconds: 600,
 };
 
 function refSelector(elementRef: string) {

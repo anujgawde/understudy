@@ -111,6 +111,8 @@ describe('Policy', () => {
       redactedFieldNames: ['password', 'ssn'],
       redactedPatterns: ['\\b\\d{3}-\\d{2}-\\d{4}\\b'],
       maxStepsPerRun: 40,
+      allowedPathPrefixes: [],
+      maxRunSeconds: 600,
     });
     expect(policy.rules.find((rule) => rule.actionClass === 'mutate')?.decision).toBe('confirm');
   });
@@ -124,6 +126,8 @@ describe('Policy', () => {
       redactedFieldNames: [],
       redactedPatterns: [],
       maxStepsPerRun: 10,
+      allowedPathPrefixes: [],
+      maxRunSeconds: 600,
     };
     expect(Policy.safeParse(invalid).success).toBe(false);
   });

@@ -92,9 +92,95 @@ const basePolicy: Policy = {
   irreversibleControlLabels: ['post', 'transfer', 'confirm'],
   redactedPatterns: [],
   maxStepsPerRun: 30,
+  allowedPathPrefixes: [],
+  maxRunSeconds: 600,
 };
 
 describe('policy enforcement during discovery', () => {
+  test('a route outside the allowed prefixes is denied even on the right origin', async () => {
+    // An origin allowlist permits the whole application. On a back-office
+    // system that includes the screens this task was never authorised to open.
+    const surface = makeSurface();
+    const modelProvider = makeModelProvider([
+      modelTurn([{
+        toolCallId: 'act-1',
+        toolName: 'act',
+        input: { actionType: 'navigate', url: 'http://localhost:3000/admin/users' },
+      }]),
+      finishTurn(),
+    ]);
+
+    const { runLog } = await discover({
+      goal: 'test',
+      startUrl: 'http://localhost:3000',
+      surface,
+      modelProvider,
+      policy: { ...basePolicy, allowedPathPrefixes: ['/members'] },
+    });
+
+    const denials = runLog.entries.filter(
+      (entry) => entry.entryType === 'policy_decision' && entry.decision === 'deny',
+    );
+    expect(denials).toHaveLength(1);
+    expect(denials[0]!.entryType === 'policy_decision' && denials[0]!.reason).toContain(
+      'outside the allowed routes',
+    );
+    expect(modelActionCalls(surface)).toHaveLength(0);
+  });
+
+  test('an allowed route on the allowed origin goes through', async () => {
+    const surface = makeSurface();
+    const modelProvider = makeModelProvider([
+      modelTurn([{
+        toolCallId: 'act-1',
+        toolName: 'act',
+        input: { actionType: 'navigate', url: 'http://localhost:3000/members/search' },
+      }]),
+      finishTurn(),
+    ]);
+
+    await discover({
+      goal: 'test',
+      startUrl: 'http://localhost:3000',
+      surface,
+      modelProvider,
+      policy: { ...basePolicy, allowedPathPrefixes: ['/members'] },
+    });
+
+    expect(modelActionCalls(surface)).toHaveLength(1);
+  });
+
+  test('a run that outlives its time budget stops as a timeout, not a step budget', async () => {
+    // The step budget counts what the model tried. This counts how long it was
+    // allowed to take, which is the stopping condition a hanging page trips.
+    const surface = makeSurface();
+    const slowProvider: ModelProvider = {
+      modelId: 'slow-test-model',
+      completeWithTools: async () => {
+        await new Promise((resolve) => setTimeout(resolve, 1100));
+        return modelTurn([{
+          toolCallId: 'act-1',
+          toolName: 'act',
+          input: { actionType: 'navigate', url: 'http://localhost:3000/members/search' },
+        }]);
+      },
+    };
+
+    const { runLog } = await discover({
+      goal: 'test',
+      startUrl: 'http://localhost:3000',
+      surface,
+      modelProvider: slowProvider,
+      policy: { ...basePolicy, maxRunSeconds: 1 },
+    });
+
+    expect(runLog.outcome?.classification).toBe('failed');
+    if (runLog.outcome?.classification === 'failed') {
+      expect(runLog.outcome.failureCode).toBe('timeout');
+      expect(runLog.outcome.message).toContain('time budget');
+    }
+  }, 15_000);
+
   test('off-allowlist navigation is denied and logged as a policy event', async () => {
     const surface = makeSurface();
     const modelProvider = makeModelProvider([

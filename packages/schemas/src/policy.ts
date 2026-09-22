@@ -12,6 +12,12 @@ export const Policy = z.object({
   // Navigation outside these origins is refused as a policy event rather than
   // attempted and failed, so the run log records why instead of what broke.
   allowedOrigins: z.array(z.url()).min(1),
+  // Narrows the allowlist from a host to the parts of it this run may touch.
+  // An origin alone is the whole application, and on a back-office system that
+  // includes the screens nobody authorised this task to visit. Empty means the
+  // whole origin, which is the right default for a single-purpose target and
+  // the wrong one for a shared one.
+  allowedPathPrefixes: z.array(z.string().startsWith('/')).default([]),
   rules: z.array(
     z.object({
       actionClass: ActionClass,
@@ -25,6 +31,10 @@ export const Policy = z.object({
   irreversibleControlLabels: z.array(z.string().min(1)).default([]),
   redactedPatterns: z.array(z.string().min(1)),
   maxStepsPerRun: z.number().int().positive(),
+  // Wall-clock ceiling for a discovery run. The step budget bounds how many
+  // things the model tries; this bounds how long one of them may hang, which
+  // is a different failure and the one the brief names separately.
+  maxRunSeconds: z.number().int().positive().default(600),
 });
 export type Policy = z.infer<typeof Policy>;
 

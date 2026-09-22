@@ -122,6 +122,8 @@ const policy: Policy = {
   irreversibleControlLabels: ['post', 'transfer', 'confirm'],
   redactedPatterns: [],
   maxStepsPerRun: 30,
+  allowedPathPrefixes: [],
+  maxRunSeconds: 600,
 };
 
 // The same flow, ending on a button that commits rather than one that searches.

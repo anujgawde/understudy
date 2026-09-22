@@ -20,6 +20,10 @@ export function defaultPolicy(
     policyId: 'cli-default',
     name: 'CLI default policy',
     allowedOrigins: [new URL(startUrl).origin],
+    // Empty on purpose: the CLI is pointed at one application and the whole of
+    // it is in scope. A tenant policy would narrow this to the routes the task
+    // needs, which is the difference between "this app" and "this screen".
+    allowedPathPrefixes: [],
     rules: [
       { actionClass: 'read', decision: 'allow' },
       { actionClass: 'navigate', decision: 'allow' },
@@ -66,5 +70,6 @@ export function defaultPolicy(
       'issue',
     ],
     maxStepsPerRun,
+    maxRunSeconds: 600,
   };
 }
