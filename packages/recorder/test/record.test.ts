@@ -171,7 +171,11 @@ describe('Capability recording', () => {
     const capability = recordCapability(loginAndLookUp, options);
 
     expect(() => Capability.parse(capability)).not.toThrow();
-    expect(capability.status).toBe('approved');
+
+    // Draft until a replay proves it. The recorder distils locators,
+    // checkpoints and parameters that the discovery run never exercised, so
+    // the model's report of success says nothing about whether they work.
+    expect(capability.status).toBe('draft');
     expect(capability.version).toBe(1);
     expect(capability.provenance).toMatchObject({
       discoveredByModel: 'test-model',

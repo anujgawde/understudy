@@ -301,13 +301,13 @@ export function recordCapability(runLog: RunLog, options: RecordingOptions): Cap
     name: options.name,
     version: 1,
     goal: runLog.goal ?? options.name,
-    // Recorded ready to use. A capability is only ever written for a run that
-    // succeeded, so a draft gate here would filter nothing — it would just mean
-    // every capability sat unusable until a human ticked a box that had no
-    // information behind it. What would make the status mean something is
-    // verifying the artifact against the page rather than trusting the model's
-    // own claim of success; see the deferred review in the build plan.
-    status: 'approved',
+    // Draft until something checks it. The model reporting success is a claim
+    // about a run, not about the artifact distilled from it: the locators are
+    // derived, the checkpoints are inferred and the parameters are guessed, and
+    // none of that was exercised by the run that produced them. Approval is
+    // earned by replaying this artifact and seeing it hold — see
+    // verifyCapability in the discover CLI, which is what promotes it.
+    status: 'draft',
     inputs,
     outputs,
     steps,

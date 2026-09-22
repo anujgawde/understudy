@@ -11,6 +11,7 @@ import { recordCapability, shapeBusinessOutcomes } from '@understudy/recorder';
 import { redactCapability, redactRunLog, redactText } from '@understudy/redaction';
 import { defaultPolicy } from './policy.js';
 import { archivePreviousVersion } from './versioning.js';
+import { verifyCapability } from './verification.js';
 import { syncCapability, syncRunLog } from './server-sync.js';
 
 function parseCliArguments() {
@@ -250,14 +251,59 @@ async function main(): Promise<void> {
     const version = await archivePreviousVersion(capabilityPath);
     if (version > 1) console.error(`Previous version archived as capability.v${version - 1}.json`);
 
+    // Recorded as a draft, then made to prove itself. Replaying the fresh
+    // artifact on a clean page is the only evidence that the derived locators,
+    // inferred checkpoints and guessed parameters actually work — the
+    // discovery run never exercised any of them.
+    console.error('');
+    console.error('Verifying the recorded artifact by replaying it...');
+
+    const verificationPage = await browser.newPage();
+    const verificationSurface = new PlaywrightSurface(verificationPage, {
+      redactedFieldNames: policy.redactedFieldNames,
+    });
+
+    let verification;
+    try {
+      verification = await verifyCapability(
+        { ...recorded, businessOutcomes, version },
+        verificationSurface,
+        args.inputs,
+        recordedRunLog,
+      );
+    } finally {
+      await verificationPage.close();
+    }
+
+    const verificationDirectory = join(capabilityDirectory, 'verification');
+    await mkdir(verificationDirectory, { recursive: true });
+    await writeFile(
+      join(verificationDirectory, 'runlog.json'),
+      JSON.stringify(redactRunLog(verification.runLog, policy), null, 2) + '\n',
+      'utf-8',
+    );
+
+    console.error(
+      verification.approved
+        ? `Approved: ${verification.reason}`
+        : `Left as draft: ${verification.reason}`,
+    );
+
     const capability = redactCapability(
-      { ...recorded, businessOutcomes, version },
+      {
+        ...recorded,
+        businessOutcomes,
+        version,
+        status: verification.approved ? 'approved' : 'draft',
+      },
       policy,
     );
     await writeFile(capabilityPath, JSON.stringify(capability, null, 2) + '\n', 'utf-8');
     await syncCapability(capability);
 
-    console.error(`Capability: ${capabilityPath} (version ${capability.version})`);
+    console.error(
+      `Capability: ${capabilityPath} (version ${capability.version}, ${capability.status})`,
+    );
     console.error(
       `Inputs: ${capability.inputs.map((input) => input.name).join(', ') || 'none'} · ` +
         `Outputs: ${capability.outputs.map((output) => output.name).join(', ') || 'none'}`,
