@@ -39,6 +39,10 @@ export interface ExecutorOptions {
   // already accepted that this run may commit something — an unattended
   // schedule, or an operator who approved the whole run up front.
   approveIrreversible?: boolean;
+  // Called once, only when a run is about to escalate, to photograph the page
+  // the operator will inherit. Supplied by the caller because the executor
+  // writes no files of its own; returns the path it wrote, or nothing.
+  captureFailureFrame?: () => Promise<string | undefined>;
   // Called as each entry is recorded, while the page is still in the state that
   // produced it — which is the only moment a caller can photograph it. Awaited,
   // so a slow observer holds the run rather than racing the next step.

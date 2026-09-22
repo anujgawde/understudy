@@ -43,6 +43,7 @@ export function raiseIntervention(options: RaiseInterventionOptions): Interventi
       runId: options.runId,
       capabilityId: options.capabilityId,
       pageUrl: options.pageUrl,
+      screenshotPath: options.screenshotPath,
       lastSuccessfulStepId: options.lastSuccessfulStepId,
     },
   };

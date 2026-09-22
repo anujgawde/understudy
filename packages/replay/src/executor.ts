@@ -649,6 +649,7 @@ export async function execute(options: ExecutorOptions): Promise<ExecutorResult>
       lastSuccessfulStepId,
       message: outcome.message,
       pageUrl: await surface.pageUrl().catch(() => undefined),
+      screenshotPath: await options.captureFailureFrame?.().catch(() => undefined),
     });
 
     await record({
