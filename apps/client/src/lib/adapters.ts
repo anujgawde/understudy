@@ -1,5 +1,6 @@
 import type {
   Capability as SchemaCapability,
+  Policy as SchemaPolicy,
   RunLog as SchemaRunLog,
   RunLogEntry as SchemaEntry,
 } from '@understudy/schemas';
@@ -9,7 +10,9 @@ import type {
   DiscoveryRun,
   DiscoveryStep,
   Intervention,
+  PolicyProfile,
   RunLog,
+  ShapingSession,
   TimelineStep,
 } from '@/types';
 
@@ -268,6 +271,93 @@ export function adaptIntervention(
       pageUrl: intervention.context.pageUrl,
       screenshotPath: intervention.context.screenshotPath,
     },
+    evidencePath,
+  };
+}
+
+/**
+ * The policy as it was actually in force for a run, rather than as a document
+ * describes it. Everything here is read off the file written beside the run;
+ * the escalation set is the one the session package enforces, so the screen
+ * cannot claim a behaviour the code does not have.
+ */
+export function adaptPolicy(
+  policy: SchemaPolicy,
+  escalateOn: string[],
+  evidencePath: string,
+): PolicyProfile {
+  return {
+    policyId: policy.policyId,
+    name: policy.name,
+    allowedOrigins: policy.allowedOrigins,
+    allowedPathPrefixes: policy.allowedPathPrefixes ?? [],
+    rules: policy.rules.map((rule) => ({
+      actionClass: rule.actionClass,
+      decision: rule.decision,
+    })),
+    redactedFieldNames: policy.redactedFieldNames,
+    redactedPatterns: policy.redactedPatterns,
+    irreversibleControlLabels: policy.irreversibleControlLabels ?? [],
+    maxStepsPerRun: policy.maxStepsPerRun,
+    maxRunSeconds: policy.maxRunSeconds ?? 600,
+    escalateOn,
+    evidencePath,
+  };
+}
+
+function describeAssertion(assertion: SchemaCapability['checkpoints'][number]['allOf'][number]): string {
+  switch (assertion.assert) {
+    case 'text_present':
+      return `text "${assertion.text}" is present`;
+    case 'text_absent':
+      return `text "${assertion.text}" is absent`;
+    case 'element_present':
+      return `the result element resolves (${assertion.target[0]?.strategy ?? 'unknown'})`;
+    case 'url_matches':
+      return `the url matches /${assertion.pattern}/`;
+  }
+}
+
+/**
+ * What one discovery run became. Everything here is read off the artifact, so
+ * the screen is a review of the thing replay will actually perform rather than
+ * a summary of what the model said it did.
+ */
+export function adaptShaping(
+  capability: SchemaCapability,
+  discoveryRunId: string,
+  evidencePath: string,
+): ShapingSession {
+  return {
+    runId: discoveryRunId,
+    capabilityId: capability.capabilityId,
+    capabilityName: capability.name,
+    status: capability.status,
+    inputs: capability.inputs.map((input) => ({
+      name: input.name,
+      valueType: input.valueType,
+      secret: input.secret,
+      description: input.description,
+    })),
+    outputs: capability.outputs.map((output) => ({
+      name: output.name,
+      valueType: output.valueType,
+      description: output.description,
+    })),
+    checkpoints: capability.checkpoints.map((checkpoint) => ({
+      checkpointId: checkpoint.checkpointId,
+      afterStepId: checkpoint.afterStepId,
+      asserts: checkpoint.allOf.map(describeAssertion),
+    })),
+    businessOutcomes: capability.businessOutcomes.map((rule) => ({
+      code: rule.code,
+      message: rule.message,
+      signal: describeAssertion(rule.signal),
+      condition:
+        rule.condition.when === 'checkpoint_failed'
+          ? `checkpoint "${rule.condition.checkpointId}" fails`
+          : `step "${rule.condition.stepId}" fails with ${rule.condition.failureCode}`,
+    })),
     evidencePath,
   };
 }

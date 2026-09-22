@@ -172,26 +172,40 @@ export interface DiscoveryRun {
 // A concrete value the run touched, with the role the recorder proposes for it.
 // Confidence is a shaping-time signal only — it is deliberately not part of the
 // capability schema, since a replayed artifact must not depend on it.
-export interface ObservedValue {
-  valueId: string;
-  value: string;
-  source: string;
-  proposedRole: 'input' | 'output' | 'constant';
-  // What this value is called in the contract once shaped, and the type it
-  // carries there — so the preview is derived rather than positional.
-  contractName: string;
-  contractType: string;
-  confidence: number;
-  uncertaintyReason?: string;
-  alternatives?: Array<'input' | 'output' | 'constant' | 'discard'>;
+
+/**
+ * What the recorder decided when it turned one run into a reusable artifact,
+ * and what the model proposed on top of it. There is no confidence score and no
+ * review queue here: a value the run was handed is a parameter by definition,
+ * and the rest is a constant of the flow. The judgement worth reviewing is the
+ * business outcomes, because those are the one part a model guessed.
+ */
+export interface ShapedValue {
+  name: string;
+  valueType: string;
+  secret?: boolean;
+  description?: string;
+}
+
+export interface ShapedOutcome {
+  code: string;
+  message: string;
+  /** What the page must show for this outcome to fire. */
+  signal: string;
+  /** Which step or checkpoint failing puts this rule in the running. */
+  condition: string;
 }
 
 export interface ShapingSession {
   runId: string;
+  capabilityId: string;
   capabilityName: string;
-  autoAcceptThreshold: number;
-  thresholdSource: string;
-  values: ObservedValue[];
+  status: 'draft' | 'approved';
+  inputs: ShapedValue[];
+  outputs: ShapedValue[];
+  checkpoints: Array<{ checkpointId: string; afterStepId: string; asserts: string[] }>;
+  businessOutcomes: ShapedOutcome[];
+  evidencePath: string;
 }
 
 export type Actor = 'system' | 'model' | 'operator';
@@ -250,20 +264,20 @@ export interface TakeoverSession {
 
 export interface PolicyProfile {
   policyId: string;
-  revision: number;
-  description: string;
+  name: string;
   allowedOrigins: string[];
-  deniedRoutes: string[];
-  rules: Array<{ actionClass: string; note: string; decision: 'safe' | 'confirm' | 'blocked' }>;
+  /** Empty means the whole origin is in scope. */
+  allowedPathPrefixes: string[];
+  rules: Array<{ actionClass: string; decision: 'allow' | 'confirm' | 'deny' }>;
   redactedFieldNames: string[];
-  screenshotPolicy: string;
-  artifactScrubbing: string;
-  evidenceRetention: string;
-  riskyActionHandling: string;
-  autoAcceptThreshold: number;
-  escalateOn: string[];
-  interventionSla: string;
+  redactedPatterns: string[];
+  irreversibleControlLabels: string[];
   maxStepsPerRun: number;
+  maxRunSeconds: number;
+  /** Failure codes that raise an intervention, read from the escalation set. */
+  escalateOn: string[];
+  /** The run this policy was in force for, so the screen is never hypothetical. */
+  evidencePath: string;
 }
 
 export interface RunLog {
