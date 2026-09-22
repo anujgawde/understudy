@@ -10,6 +10,7 @@ import { discover } from '@understudy/discovery';
 import { recordCapability, shapeBusinessOutcomes } from '@understudy/recorder';
 import { redactCapability, redactRunLog, redactText } from '@understudy/redaction';
 import { defaultPolicy } from './policy.js';
+import { archivePreviousVersion } from './versioning.js';
 import { syncCapability, syncRunLog } from './server-sync.js';
 
 function parseCliArguments() {
@@ -245,13 +246,18 @@ async function main(): Promise<void> {
       );
     }
 
-    const capability = redactCapability({ ...recorded, businessOutcomes }, policy);
-
     const capabilityPath = join(capabilityDirectory, 'capability.json');
+    const version = await archivePreviousVersion(capabilityPath);
+    if (version > 1) console.error(`Previous version archived as capability.v${version - 1}.json`);
+
+    const capability = redactCapability(
+      { ...recorded, businessOutcomes, version },
+      policy,
+    );
     await writeFile(capabilityPath, JSON.stringify(capability, null, 2) + '\n', 'utf-8');
     await syncCapability(capability);
 
-    console.error(`Capability: ${capabilityPath}`);
+    console.error(`Capability: ${capabilityPath} (version ${capability.version})`);
     console.error(
       `Inputs: ${capability.inputs.map((input) => input.name).join(', ') || 'none'} · ` +
         `Outputs: ${capability.outputs.map((output) => output.name).join(', ') || 'none'}`,
