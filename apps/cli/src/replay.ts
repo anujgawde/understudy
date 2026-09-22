@@ -104,6 +104,15 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
+  // Named explicitly, so this runs — but a draft is an artifact nothing has
+  // verified, and the operator should know that before reading its output.
+  if (capability.status !== 'approved') {
+    console.error(
+      `Note: "${capability.capabilityId}" is a draft — nothing has replayed it successfully ` +
+        'since it was recorded. Running it because you named it.',
+    );
+  }
+
   // Paced only when headed: a local replay otherwise finishes faster than a person can follow.
   const browser = await chromium.launch({
     headless: !args.headed,

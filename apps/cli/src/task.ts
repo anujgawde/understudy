@@ -160,6 +160,23 @@ async function main(): Promise<void> {
     (entry) => entry.capability.capabilityId === match.capabilityId,
   )!;
 
+  // This is the unattended path: a request arrives, a capability is chosen and
+  // it runs with nobody watching. A draft is an artifact nothing has replayed
+  // successfully yet, so running one here is exactly the case the approval
+  // state exists to stop. `replay` still runs drafts, because naming the file
+  // is a person deciding to.
+  if (chosen.capability.status !== 'approved') {
+    console.error(`Matched: ${match.capabilityId}`);
+    console.error('');
+    console.error(`Refusing to run it: this capability is a draft.`);
+    console.error('A draft has not been replayed successfully since it was recorded, so nothing');
+    console.error('has confirmed its locators, checkpoints or parameters work.');
+    console.error('');
+    console.error('Re-run discovery to have it verified, or replay it directly and deliberately:');
+    console.error(`  npm run replay ${chosen.path}`);
+    process.exit(1);
+  }
+
   // Anything passed on the command line wins: a secret is never in the request
   // text, and an operator overriding a bound value means to.
   const inputs = { ...match.inputs, ...args.inputs };
