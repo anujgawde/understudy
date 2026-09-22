@@ -1,6 +1,6 @@
 import { describe, test, expect, vi } from 'vitest';
 import type { ModelProvider, ModelTurn, ToolCall } from '@understudy/model-provider';
-import type { Observation, Policy } from '@understudy/schemas';
+import type { Observation, Policy, RunLog, RunLogEntry } from '@understudy/schemas';
 import type { Surface } from '@understudy/surface';
 import { discover } from '../src/discovery.js';
 
@@ -29,6 +29,8 @@ function makeSurface(): Surface {
     extractText: vi.fn().mockResolvedValue({ text: 'hello', resolveResult: { rungIndex: 0 } }),
     pageUrl: vi.fn().mockResolvedValue('http://localhost:3000'),
     hasText: vi.fn().mockResolvedValue(false),
+    drainDialogs: vi.fn().mockResolvedValue([]),
+    lastResponseStatus: vi.fn().mockReturnValue(200),
   };
 }
 
@@ -38,8 +40,11 @@ function modelActionCalls(surface: Surface): unknown[] {
   return vi.mocked(surface.act).mock.calls.slice(1);
 }
 
-function modelActionEntries(runLog: { entries: { entryType: string; actor: string }[] }) {
-  return runLog.entries.filter((e) => e.entryType === 'action' && e.actor === 'model');
+function modelActionEntries(runLog: RunLog) {
+  return runLog.entries.filter(
+    (entry): entry is Extract<RunLogEntry, { entryType: 'action' }> =>
+      entry.entryType === 'action' && entry.actor === 'model',
+  );
 }
 
 function makeModelProvider(turns: ModelTurn[]): ModelProvider {
