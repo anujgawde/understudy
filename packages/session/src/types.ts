@@ -75,9 +75,23 @@ export interface RaiseInterventionOptions {
   pageUrl?: string;
 }
 
+/**
+ * The line is whether a human at the keyboard could actually do something about
+ * it. An expired session, a checkpoint that stopped holding, a step waiting on
+ * approval and a dialog nobody declared are all states an operator can resolve
+ * on the live page and hand back from.
+ *
+ * `locator_not_found` is deliberately absent: a ladder that matches nothing is
+ * an artifact that needs re-recording, and parking an operator in front of it
+ * asks them to fix a bug by hand, once, invisibly. `app_error` is absent for the
+ * opposite reason — nobody can repair a 500 from inside the session; that run
+ * needs retrying later, not taking over.
+ */
 export const ESCALATION_WORTHY_FAILURES: ReadonlySet<FailureCode> = new Set([
   'timeout',
   'session_expired',
   'assertion_failed',
   'navigation_failed',
+  'approval_required',
+  'unexpected_dialog',
 ]);

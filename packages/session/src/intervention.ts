@@ -8,6 +8,8 @@ import {
 
 function severityFor(failureCode: FailureCode): InterventionSeverity {
   if (failureCode === 'session_expired' || failureCode === 'timeout') return 'critical';
+  // An approval pause is the system working as designed, not something going
+  // wrong: the run is intact and waiting on a decision.
   return 'warning';
 }
 
