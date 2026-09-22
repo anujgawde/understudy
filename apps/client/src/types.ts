@@ -207,34 +207,29 @@ export interface LedgerEntry {
 
 // Why the run stopped. Each trigger carries different context, so each renders
 // a different row emphasis in the inbox.
-export type InterventionTrigger = 'undeclared_state' | 'policy_denied' | 'risky_step';
-
 export interface Intervention {
   interventionId: string;
   sessionId: string;
   raisedAt: string;
   severity: 'warning' | 'critical';
   state: 'raised' | 'acknowledged' | 'resolved';
-  trigger: InterventionTrigger;
   failureCode: string;
-  headline: string;
   message: string;
-  badges: string[];
   context: {
     runId: string;
-    capabilityId: string;
-    capabilityVersion: number;
-    stepNumber: number;
-    totalSteps: number;
-    tenant: string;
-    pageUrl: string;
-    lastSuccessfulStepId: string;
+    capabilityId?: string;
+    capabilityVersion?: number;
+    // Derived from the capability, so the row can say "step 6 of 8" without
+    // the intervention itself carrying a number that could drift from it.
+    stepNumber?: number;
+    totalSteps?: number;
+    failedAtStepId?: string;
+    lastSuccessfulStepId?: string;
+    pageUrl?: string;
+    screenshotPath?: string;
   };
-  // The clock is bounded by the target app's own session lifetime, not by our
-  // preference — holding a session open for a human who isn't coming has no value.
-  sessionSecondsLeft: number;
-  sessionSecondsTotal: number;
-  actionLabel: string;
+  /** Where the run that raised this is on disk, for links into the evidence. */
+  evidencePath: string;
 }
 
 export interface TakeoverSession {

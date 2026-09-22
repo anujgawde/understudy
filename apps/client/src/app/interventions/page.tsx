@@ -1,89 +1,77 @@
 import Link from 'next/link';
 import { AppShell } from '@/components/app-shell';
 import { MicroBadge } from '@/components/micro-badge';
-import { interventions } from '@/fixtures';
+import { getInterventions } from '@/lib/data';
 import type { Intervention } from '@/types';
 
-function clock(seconds: number) {
-  const minutes = Math.floor(seconds / 60);
-  return `${String(minutes).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
-}
-
-function sinceRaised(raisedAt: string) {
-  const seconds = Math.max(0, Math.round((Date.parse('2026-09-16T14:24:45Z') - Date.parse(raisedAt)) / 1000));
-  return `${String(Math.floor(seconds / 3600)).padStart(2, '0')}:${clock(seconds % 3600)}`;
+function raisedAt(timestamp: string) {
+  return new Date(timestamp).toLocaleString('en-GB', {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 }
 
 function InterventionRow({ intervention }: { intervention: Intervention }) {
-  const remaining = intervention.sessionSecondsLeft / intervention.sessionSecondsTotal;
   const critical = intervention.severity === 'critical';
+  const { context } = intervention;
 
   return (
     <div className={`border bg-panel ${critical ? 'border-red-line' : 'border-line'}`}>
       <div className="grid grid-cols-[minmax(0,1fr)_150px_132px] gap-4 items-center px-4 py-3 border-b border-line-soft">
         <div className="min-w-0 flex flex-col gap-[5px]">
           <div className="flex items-center gap-2.5 flex-wrap">
-            <span className="font-mono text-[11px] text-ink-mute">{intervention.interventionId}</span>
-            {intervention.badges.map((badge) => (
-              <MicroBadge key={badge} hue={critical ? 'red' : 'amber'}>
-                {badge}
-              </MicroBadge>
-            ))}
+            <span className="font-mono text-[11px] text-ink-mute">
+              {intervention.interventionId.slice(0, 8)}
+            </span>
+            <MicroBadge hue={critical ? 'red' : 'amber'}>{intervention.failureCode}</MicroBadge>
+            <MicroBadge hue="neutral">{intervention.state}</MicroBadge>
           </div>
           <div className="text-[14.5px] font-semibold -tracking-[0.01em] text-ink">
-            {intervention.headline}
+            {intervention.message}
           </div>
-          <div className="text-[12.5px] leading-[1.5] text-ink-body">{intervention.message}</div>
           <div className="flex gap-4 font-mono text-[10.5px] text-ink-mute flex-wrap mt-0.5">
-            <span>
-              {intervention.context.capabilityId} v{intervention.context.capabilityVersion}
-            </span>
-            <span>
-              step {intervention.context.stepNumber}/{intervention.context.totalSteps}
-            </span>
-            <span>{intervention.context.tenant}</span>
-            <span>raised {sinceRaised(intervention.raisedAt)} ago</span>
+            {context.capabilityId && (
+              <span>
+                {context.capabilityId}
+                {context.capabilityVersion ? ` v${context.capabilityVersion}` : ''}
+              </span>
+            )}
+            {context.stepNumber && context.totalSteps && (
+              <span>
+                step {context.stepNumber}/{context.totalSteps}
+              </span>
+            )}
+            {context.lastSuccessfulStepId && <span>last ok · {context.lastSuccessfulStepId}</span>}
+            <span>raised {raisedAt(intervention.raisedAt)}</span>
           </div>
         </div>
 
-        <div className="flex flex-col gap-[5px]">
-          <div className="type-micro-label">Session left</div>
-          <div
-            className={`font-mono text-[17px] font-semibold ${critical ? 'text-red-deep' : 'text-ink'}`}
-          >
-            {clock(intervention.sessionSecondsLeft)}
+        <div className="flex flex-col gap-[5px] min-w-0">
+          <div className="type-micro-label">Stopped on</div>
+          <div className="font-mono text-[11px] text-ink-body truncate" title={context.pageUrl}>
+            {context.pageUrl ?? 'unknown page'}
           </div>
-          <div className="h-[3px] bg-track">
-            <div
-              className={`h-[3px] ${critical ? 'bg-red-ink' : 'bg-amber-ink'}`}
-              style={{ width: `${Math.round(remaining * 100)}%` }}
-            />
-          </div>
+          {context.screenshotPath && (
+            <div className="font-mono text-[10.5px] text-ink-mute">frame captured</div>
+          )}
         </div>
 
         <Link
           href={`/interventions/${intervention.interventionId}`}
           className="px-3.5 py-[9px] bg-operator-control-ground text-operator-control-text text-[12.5px] font-semibold text-center"
         >
-          {intervention.actionLabel}
+          Take control
         </Link>
       </div>
-
-      {critical && (
-        <div className="px-4 py-[11px] bg-panel-head text-xs leading-[1.5] text-ink-body">
-          Everything an operator needs to act is on the row: which capability, which step, why it
-          stopped, and how long they have. Opening the session should not be how you find out what
-          the job is.
-        </div>
-      )}
     </div>
   );
 }
 
-export default function InterventionInboxPage() {
-  const ordered = [...interventions].sort(
-    (left, right) => left.sessionSecondsLeft - right.sessionSecondsLeft,
-  );
+export default async function InterventionInboxPage() {
+  const interventions = await getInterventions();
+  const open = interventions.filter((one) => one.state !== 'resolved');
 
   return (
     <AppShell active="interventions">
@@ -92,48 +80,57 @@ export default function InterventionInboxPage() {
           <div className="type-section-label">S8</div>
           <h1 className="type-page-heading">Interventions</h1>
           <p className="text-[13px] text-ink-mute">
-            Sessions paused and waiting for a person. Ordered by time remaining, not by arrival — a
-            session that expires is a run lost.
+            Runs that stopped and raised a request for a person, read from the evidence they were
+            written beside.
           </p>
         </div>
         <div className="flex gap-[7px] flex-none">
           <span className="px-2.5 py-[5px] border border-ink bg-ink text-button-primary-text font-mono text-[11px]">
-            open · {ordered.length}
+            open · {open.length}
           </span>
           <span className="px-2.5 py-[5px] border border-line bg-panel font-mono text-[11px] text-ink-body">
-            mine · 0
-          </span>
-          <span className="px-2.5 py-[5px] border border-line bg-panel font-mono text-[11px] text-ink-body">
-            resolved today · 9
+            recorded · {interventions.length}
           </span>
         </div>
       </header>
 
       <div className="flex-1 min-h-0 px-[26px] py-[18px] flex flex-col gap-3.5">
-        {ordered.map((intervention) => (
+        {interventions.map((intervention) => (
           <InterventionRow key={intervention.interventionId} intervention={intervention} />
         ))}
 
+        {interventions.length === 0 && (
+          <div className="px-[17px] py-[15px] border border-dashed border-line bg-panel-head">
+            <div className="type-section-label mb-1.5">Nothing has escalated</div>
+            <div className="text-xs leading-[1.55] text-ink-body">
+              No run in <span className="font-mono">evidence/</span> has raised an intervention. A
+              replay that hits a condition it cannot recover from writes one beside its run log —
+              try <span className="font-mono">npm run handoff</span>, or replay member 77777, whose
+              session expires mid-run.
+            </div>
+          </div>
+        )}
+
         <div className="mt-auto px-[17px] py-[15px] border border-dashed border-line bg-panel-head grid grid-cols-3 gap-5">
           <div className="min-w-0">
-            <div className="type-section-label mb-1.5">Why it stopped — the three triggers</div>
+            <div className="type-section-label mb-1.5">What reaches this screen</div>
             <div className="text-xs leading-[1.55] text-ink-body">
-              An undeclared state, a policy denial, or a risky step awaiting authorisation. Each
-              carries different context, so each renders a different row emphasis.
+              Only failures a person could act on from inside the session. A broken locator is an
+              artifact to re-record, not a job for an operator, so it never appears here.
             </div>
           </div>
           <div className="min-w-0">
-            <div className="type-section-label mb-1.5">Why the clock is loud</div>
+            <div className="type-section-label mb-1.5">Why the row carries context</div>
             <div className="text-xs leading-[1.55] text-ink-body">
-              The handoff holds a real authenticated session open. The SLA is bounded by the
-              app&rsquo;s own session lifetime, not by our preference.
+              Which capability, which step, what was last known good, and the page it stopped on.
+              Opening the session should not be how you find out what the job is.
             </div>
           </div>
           <div className="min-w-0">
-            <div className="type-section-label mb-1.5">What happens on expiry</div>
+            <div className="type-section-label mb-1.5">Taking control</div>
             <div className="text-xs leading-[1.55] text-ink-body">
-              The run is abandoned with a typed reason and the caller is told. Abandoning cleanly
-              beats timing out ambiguously.
+              Control transfers on the live session, and input is refused until it does. Everything
+              the operator then does is recorded in the session ledger as evidence.
             </div>
           </div>
         </div>

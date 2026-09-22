@@ -1,11 +1,9 @@
 import type {
   Capability,
   DiscoveryRun,
-  Intervention,
   PolicyProfile,
   RunLog,
   ShapingSession,
-  TakeoverSession,
 } from '@/types';
 
 export const capabilities: Capability[] = [
@@ -645,91 +643,6 @@ export const shapingSession: ShapingSession = {
       proposedRole: 'constant',
       confidence: 0.89,
     },
-  ],
-};
-
-export const interventions: Intervention[] = [
-  {
-    interventionId: 'itv_4471',
-    sessionId: 'sess_9f21c',
-    raisedAt: '2026-09-16T14:22:31Z',
-    severity: 'critical',
-    state: 'raised',
-    trigger: 'undeclared_state',
-    failureCode: 'session_expired',
-    headline: 'Session expired mid-replay — re-authentication required',
-    message:
-      "Credential entry is outside the agent's action allowlist by policy, so it cannot self-recover.",
-    badges: ['session expiring'],
-    context: {
-      runId: 'rpl_01K8Q9',
-      capabilityId: 'read_member_savings_balance',
-      capabilityVersion: 3,
-      stepNumber: 6,
-      totalSteps: 8,
-      tenant: 'riverbend-cu',
-      pageUrl: 'meridian.riverbend-cu.internal/login.aspx',
-      lastSuccessfulStepId: 'click-search',
-    },
-    sessionSecondsLeft: 466,
-    sessionSecondsTotal: 1370,
-    actionLabel: 'Take control',
-  },
-  {
-    interventionId: 'itv_4468',
-    sessionId: 'sess_9f18a',
-    raisedAt: '2026-09-16T14:24:04Z',
-    severity: 'warning',
-    state: 'raised',
-    trigger: 'risky_step',
-    failureCode: 'policy_denied',
-    headline: 'Risky step needs a person to authorise it',
-    message:
-      'Replay reached the sub-account confirmation screen. Policy classes submit as irreversible, so the agent stopped one click short and asked.',
-    badges: ['irreversible', 'awaiting approval'],
-    context: {
-      runId: 'rpl_01KC40',
-      capabilityId: 'open_savings_subaccount',
-      capabilityVersion: 1,
-      stepNumber: 9,
-      totalSteps: 10,
-      tenant: 'lakeshore-fcu',
-      pageUrl: 'meridian.lakeshore-fcu.internal/shares/confirm.aspx',
-      lastSuccessfulStepId: 'fill-initial-deposit',
-    },
-    sessionSecondsLeft: 1082,
-    sessionSecondsTotal: 1370,
-    actionLabel: 'Review & decide',
-  },
-];
-
-export const takeoverSession: TakeoverSession = {
-  sessionId: 'sess_9f21c',
-  interventionId: 'itv_4471',
-  state: 'paused',
-  controlHeldBy: 'model',
-  operatorName: 'm.alvarez',
-  browser: 'chromium',
-  viewport: '1440×900',
-  transport: 'CDP screencast',
-  headline: 'Session expired mid-replay — re-authentication required',
-  detail:
-    'Replay of read_member_savings_balance v3 halted at step 6 of 8. The content frame was replaced by /login.aspx, which is not a declared business outcome. Credential entry is outside the agent’s action allowlist by policy, so it cannot self-recover.',
-  ledger: [
-    { entryId: 'led_1', occurredAt: '14:22:01', actor: 'model', summary: 'granted control at run start' },
-    { entryId: 'led_2', occurredAt: '14:22:14', actor: 'model', summary: 'steps 1–5 executed, rung 1' },
-    { entryId: 'led_3', occurredAt: '14:22:31', actor: 'system', summary: 'undeclared state at step 6 — halted' },
-    { entryId: 'led_4', occurredAt: '14:22:31', actor: 'system', summary: 'evidence captured · itv_4471 raised' },
-    { entryId: 'led_5', occurredAt: '14:22:32', actor: 'paused', summary: 'awaiting operator — token still with agent' },
-  ],
-  constraints: [
-    { decision: 'allow', text: 'navigate and act anywhere inside the tenant allowlist' },
-    {
-      decision: 'allow',
-      text: 'enter credentials from the tenant vault — never typed by, or visible to, the agent',
-    },
-    { decision: 'deny', text: 'leaving the allowlisted origin — the proxy blocks it for humans too' },
-    { decision: 'deny', text: 'screenshot capture while a credential field has focus' },
   ],
 };
 

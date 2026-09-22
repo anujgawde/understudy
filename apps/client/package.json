@@ -2,7 +2,7 @@
   "name": "@understudy/client",
   "version": "0.0.0",
   "private": true,
-  "description": "Understudy console — the automation UI.",
+  "description": "Understudy console \u2014 the automation UI.",
   "scripts": {
     "dev": "next dev --port 3000",
     "build": "next build",
@@ -12,6 +12,7 @@
   "dependencies": {
     "@tailwindcss/postcss": "^4.3.3",
     "@understudy/schemas": "0.0.0",
+    "@understudy/session": "*",
     "next": "16.3.5",
     "react": "19.2.8",
     "react-dom": "19.2.8",

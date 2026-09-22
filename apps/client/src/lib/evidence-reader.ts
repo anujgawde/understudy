@@ -2,8 +2,10 @@ import { readdir, readFile, stat } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import type {
   Capability as SchemaCapability,
+  Policy as SchemaPolicy,
   RunLog as SchemaRunLog,
 } from '@understudy/schemas';
+import type { Intervention as SchemaIntervention, LedgerEntry } from '@understudy/session';
 
 const EVIDENCE_DIR = process.env.EVIDENCE_DIR
   ? resolve(process.env.EVIDENCE_DIR)
@@ -98,6 +100,85 @@ export async function readDiscoveryRunLog(capabilityId: string): Promise<{ runLo
     if (runLog) return { runLog, evidencePath: discoveryPath };
   }
   return null;
+}
+
+/**
+ * Every run directory that might hold one, walked the same way replays are.
+ * An intervention is written beside the run that raised it rather than into a
+ * directory of its own, because the run log is the context an operator needs
+ * and separating them would mean reuniting them here.
+ */
+async function runDirectories(): Promise<string[]> {
+  const found: string[] = [];
+
+  for (const dir of await capabilityDirs()) {
+    for (const section of ['handoff', 'verification', 'discovery']) {
+      const path = join(dir, section);
+      if (await exists(path)) found.push(path);
+    }
+
+    const replaysDir = join(dir, 'replays');
+    if (!(await exists(replaysDir))) continue;
+
+    for (const outcomeDir of await readdir(replaysDir, { withFileTypes: true })) {
+      if (!outcomeDir.isDirectory()) continue;
+      const outcomePath = join(replaysDir, outcomeDir.name);
+
+      for (const runDir of await readdir(outcomePath, { withFileTypes: true })) {
+        if (runDir.isDirectory()) found.push(join(outcomePath, runDir.name));
+      }
+    }
+  }
+
+  return found;
+}
+
+export async function readInterventions(): Promise<
+  Array<{ intervention: SchemaIntervention; evidencePath: string; runLog: SchemaRunLog | null }>
+> {
+  const results: Array<{
+    intervention: SchemaIntervention;
+    evidencePath: string;
+    runLog: SchemaRunLog | null;
+  }> = [];
+
+  for (const path of await runDirectories()) {
+    const intervention = await readJson<SchemaIntervention>(join(path, 'intervention.json'));
+    if (!intervention) continue;
+    results.push({
+      intervention,
+      evidencePath: path,
+      runLog: await readJson<SchemaRunLog>(join(path, 'runlog.json')),
+    });
+  }
+
+  return results.sort((left, right) =>
+    right.intervention.raisedAt.localeCompare(left.intervention.raisedAt),
+  );
+}
+
+export async function readLedger(): Promise<LedgerEntry[]> {
+  for (const path of await runDirectories()) {
+    const handoff = await readJson<{ ledger: LedgerEntry[] }>(join(path, 'ledger.json'));
+    if (handoff?.ledger) return handoff.ledger;
+  }
+  return [];
+}
+
+/**
+ * The policy in force for the most recent run that recorded one. Policies are
+ * written per run rather than kept in one place, so what the screen shows is
+ * what actually governed something rather than what a config file claims.
+ */
+export async function readPolicy(): Promise<{ policy: SchemaPolicy; evidencePath: string } | null> {
+  const candidates: Array<{ policy: SchemaPolicy; evidencePath: string }> = [];
+
+  for (const path of await runDirectories()) {
+    const policy = await readJson<SchemaPolicy>(join(path, 'policy.json'));
+    if (policy) candidates.push({ policy, evidencePath: path });
+  }
+
+  return candidates[0] ?? null;
 }
 
 export function evidenceDirectory(): string {

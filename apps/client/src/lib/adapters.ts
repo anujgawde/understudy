@@ -3,10 +3,12 @@ import type {
   RunLog as SchemaRunLog,
   RunLogEntry as SchemaEntry,
 } from '@understudy/schemas';
+import type { Intervention as SchemaIntervention } from '@understudy/session';
 import type {
   Capability,
   DiscoveryRun,
   DiscoveryStep,
+  Intervention,
   RunLog,
   TimelineStep,
 } from '@/types';
@@ -230,5 +232,42 @@ function finalizeStep(partial: Partial<DiscoveryStep>, sequence: number): Discov
     decide: partial.decide ?? '',
     act: partial.act ?? '',
     policy: partial.policy,
+  };
+}
+
+/**
+ * Turns a recorded intervention into the row the inbox draws. Step position is
+ * derived from the capability rather than stored on the intervention, so the
+ * two cannot disagree after an artifact is re-recorded.
+ */
+export function adaptIntervention(
+  intervention: SchemaIntervention,
+  capability: SchemaCapability | null,
+  evidencePath: string,
+): Intervention {
+  const stepIndex = capability?.steps.findIndex(
+    (step) => step.stepId === intervention.failedAtStepId,
+  );
+
+  return {
+    interventionId: intervention.interventionId,
+    sessionId: intervention.sessionId,
+    raisedAt: intervention.raisedAt,
+    severity: intervention.severity,
+    state: intervention.state,
+    failureCode: intervention.failureCode,
+    message: intervention.message,
+    context: {
+      runId: intervention.context.runId,
+      capabilityId: intervention.context.capabilityId,
+      capabilityVersion: capability?.version,
+      ...(stepIndex !== undefined && stepIndex >= 0 && { stepNumber: stepIndex + 1 }),
+      ...(capability && { totalSteps: capability.steps.length }),
+      failedAtStepId: intervention.failedAtStepId,
+      lastSuccessfulStepId: intervention.context.lastSuccessfulStepId,
+      pageUrl: intervention.context.pageUrl,
+      screenshotPath: intervention.context.screenshotPath,
+    },
+    evidencePath,
   };
 }

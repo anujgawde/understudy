@@ -1,15 +1,18 @@
-import type { Capability, DiscoveryRun, RunLog } from '@/types';
+import type { Capability, DiscoveryRun, Intervention, LedgerEntry, RunLog } from '@/types';
 import {
   readCapabilities as readCapabilitiesFromDisk,
   readCapability as readCapabilityFromDisk,
   readReplayRuns as readReplayRunsFromDisk,
   readReplayRun as readReplayRunFromDisk,
   readDiscoveryRunLog as readDiscoveryFromDisk,
+  readInterventions as readInterventionsFromDisk,
+  readLedger as readLedgerFromDisk,
 } from './evidence-reader';
 import {
   adaptCapability,
   adaptReplayRunLog,
   adaptDiscoveryRunLog,
+  adaptIntervention,
 } from './adapters';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -106,4 +109,87 @@ export async function getDiscoveryRun(capabilityId: string): Promise<DiscoveryRu
   const entry = await readDiscoveryFromDisk(capabilityId);
   if (!entry) return null;
   return adaptDiscoveryRunLog(entry.runLog);
+}
+
+/**
+ * Interventions the system has actually raised. In server mode they come from
+ * the server's own store; standalone they are read from the run directories
+ * they were written beside, which is also what makes them survive the process
+ * that raised them.
+ */
+export async function getInterventions(): Promise<Intervention[]> {
+  if (useServer()) {
+    return fetchJson<Intervention[]>('/interventions');
+  }
+
+  const [records, capabilities] = await Promise.all([
+    readInterventionsFromDisk(),
+    readCapabilitiesFromDisk(),
+  ]);
+
+  return records.map(({ intervention, evidencePath }) =>
+    adaptIntervention(
+      intervention,
+      capabilities.find((one) => one.capabilityId === intervention.context.capabilityId) ?? null,
+      evidencePath,
+    ),
+  );
+}
+
+export async function getIntervention(interventionId: string): Promise<Intervention | null> {
+  const all = await getInterventions();
+  return all.find((one) => one.interventionId === interventionId) ?? null;
+}
+
+/**
+ * The session ledger from the most recent handoff run. Every transfer of
+ * control and everything the operator did while they held it, tagged with who
+ * did it — which is the record the design promises and deliberately never
+ * folds back into an artifact.
+ */
+export async function getLedger(): Promise<LedgerEntry[]> {
+  if (useServer()) {
+    try {
+      return await fetchJson<LedgerEntry[]>('/interventions/ledger');
+    } catch {
+      return [];
+    }
+  }
+
+  const entries = await readLedgerFromDisk();
+  return entries.map((entry) => ({
+    entryId: entry.entryId,
+    occurredAt: new Date(entry.occurredAt).toLocaleTimeString('en-GB', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    }),
+    actor: entry.actor,
+    summary: describeLedgerAction(entry.action, entry.detail),
+  }));
+}
+
+function describeLedgerAction(action: string, detail?: Record<string, unknown>): string {
+  switch (action) {
+    case 'session_created':
+      return 'session created';
+    case 'run_started':
+      return `run started · ${String(detail?.['capabilityId'] ?? '')}`.trim();
+    case 'intervention_raised':
+      return `escalated · ${String(detail?.['failureCode'] ?? 'unknown')}`;
+    case 'handed_off':
+      return `control handed to ${String(detail?.['operatorId'] ?? 'operator')}`;
+    case 'operator_input':
+      return detail?.['characters'] !== undefined
+        ? `typed ${String(detail['characters'])} characters`
+        : `operator ${String(detail?.['inputType'] ?? 'input')}`;
+    case 'handed_back':
+      return `control handed back by ${String(detail?.['operatorId'] ?? 'operator')}`;
+    case 'run_resumed':
+      return 'run resumed';
+    case 'run_completed':
+      return 'run completed';
+    default:
+      return action;
+  }
 }
