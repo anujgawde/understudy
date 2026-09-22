@@ -15,6 +15,7 @@
     "@understudy/redaction": "*",
     "@understudy/replay": "*",
     "@understudy/schemas": "*",
+    "@understudy/session": "*",
     "@understudy/surface": "*"
   }
 }

@@ -17,6 +17,7 @@ import {
 } from '@understudy/session';
 import { redactRunLog } from '@understudy/redaction';
 import { defaultPolicy } from './policy.js';
+import { syncIntervention, syncRunLog } from './server-sync.js';
 
 /**
  * Drives one escalation all the way through: replay until it gets stuck, hand
@@ -206,6 +207,9 @@ async function main(): Promise<void> {
       JSON.stringify({ sessionId, state: session.state, ledger: session.ledger, interventions: session.interventions }, null, 2) + '\n',
       'utf-8',
     );
+
+    await syncRunLog(redactRunLog(resumed, redactionPolicy));
+    await syncIntervention(intervention, session.ledger);
 
     console.error('');
     console.error(`Outcome after hand-back: ${outcome}`);

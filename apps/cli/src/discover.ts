@@ -12,7 +12,7 @@ import { redactCapability, redactRunLog, redactText } from '@understudy/redactio
 import { defaultPolicy } from './policy.js';
 import { archivePreviousVersion } from './versioning.js';
 import { verifyCapability } from './verification.js';
-import { syncCapability, syncRunLog } from './server-sync.js';
+import { syncCapability, syncPolicy, syncRunLog } from './server-sync.js';
 
 function parseCliArguments() {
   const { values, positionals } = parseArgs({
@@ -221,6 +221,7 @@ async function main(): Promise<void> {
       'utf-8',
     );
     await syncRunLog(runLog);
+    await syncPolicy(policy);
 
     console.error('');
     console.error(`Outcome: ${runLog.outcome?.classification ?? 'unknown'}`);

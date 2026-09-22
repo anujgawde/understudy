@@ -9,7 +9,7 @@ import { execute } from '@understudy/replay';
 import { SessionRegistry } from '@understudy/session';
 import { redactRunLog } from '@understudy/redaction';
 import { defaultPolicy } from './policy.js';
-import { syncRunLog } from './server-sync.js';
+import { syncIntervention, syncPolicy, syncRunLog } from './server-sync.js';
 
 function parseCliArguments() {
   const { values, positionals } = parseArgs({
@@ -211,8 +211,10 @@ async function main(): Promise<void> {
         'utf-8',
       );
       console.error(`Intervention: ${join(runDirectory, 'intervention.json')}`);
+      await syncIntervention(intervention);
     }
     await syncRunLog(runLog);
+    await syncPolicy(redactionPolicy);
     console.error(`Outcome: ${outcome}`);
     console.error(`Run log: ${runLogPath}`);
     console.error(`Screenshots: ${frames.length}`);
