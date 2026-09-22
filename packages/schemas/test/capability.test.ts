@@ -18,6 +18,66 @@ describe('Capability', () => {
     expect(capability.status).toBe('draft');
   });
 
+  it('carries the outcome signals and the default risk on every step', () => {
+    const capability = Capability.parse(exampleArtifact);
+
+    // Two outcomes stop on the same step with the same failure code and are
+    // told apart only by what the page says. That is the whole mechanism.
+    const onDetailStep = capability.businessOutcomes.filter(
+      (rule) =>
+        rule.condition.when === 'step_failed' && rule.condition.stepId === 'open-member-detail',
+    );
+    expect(onDetailStep).toHaveLength(2);
+    expect(new Set(onDetailStep.map((rule) => rule.signal.assert))).toEqual(
+      new Set(['text_present']),
+    );
+
+    expect(capability.steps.every((step) => step.risk === 'reversible')).toBe(true);
+  });
+
+  it('rejects a business outcome whose signal is an absence', () => {
+    const base = exampleArtifact as Record<string, unknown>;
+    const invalid = {
+      ...base,
+      businessOutcomes: [
+        {
+          code: 'member_not_found',
+          message: 'No member matched that member number.',
+          signal: { assert: 'text_absent', text: 'Share Summary' },
+          condition: {
+            when: 'step_failed',
+            stepId: 'open-member-detail',
+            failureCode: 'locator_not_found',
+          },
+        },
+      ],
+    };
+
+    const result = Capability.safeParse(invalid);
+    expect(result.success).toBe(false);
+    expect(result.error?.issues[0]?.message).toContain('positively shows');
+  });
+
+  it('rejects a business outcome with no signal at all', () => {
+    const base = exampleArtifact as Record<string, unknown>;
+    const invalid = {
+      ...base,
+      businessOutcomes: [
+        {
+          code: 'member_not_found',
+          message: 'No member matched that member number.',
+          condition: {
+            when: 'step_failed',
+            stepId: 'open-member-detail',
+            failureCode: 'locator_not_found',
+          },
+        },
+      ],
+    };
+
+    expect(Capability.safeParse(invalid).success).toBe(false);
+  });
+
   it('rejects a capability with no steps', () => {
     const invalid = { ...(exampleArtifact as Record<string, unknown>), steps: [] };
     expect(Capability.safeParse(invalid).success).toBe(false);
@@ -59,6 +119,7 @@ describe('Capability', () => {
     const invalid = {
       ...(exampleArtifact as Record<string, unknown>),
       checkpoints: [],
+      businessOutcomes: [],
       steps: [
         {
           stepId: 'fill-unknown',
@@ -79,6 +140,7 @@ describe('Capability', () => {
     const invalid = {
       ...(exampleArtifact as Record<string, unknown>),
       checkpoints: [],
+      businessOutcomes: [],
       steps: [
         {
           stepId: 'click-by-input',

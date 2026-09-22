@@ -26,64 +26,126 @@
     }
   ],
   "outputs": [
-    { "name": "memberName", "valueType": "string", "required": true },
-    { "name": "savingsBalance", "valueType": "number", "required": true }
+    {
+      "name": "memberName",
+      "valueType": "string",
+      "required": true
+    },
+    {
+      "name": "savingsBalance",
+      "valueType": "number",
+      "required": true
+    }
   ],
   "steps": [
     {
       "stepId": "open-login",
       "description": "Land on the login page",
-      "action": { "actionType": "navigate", "url": "http://localhost:4000/login" },
-      "waitFor": { "waitUntil": "pageLoad" }
+      "action": {
+        "actionType": "navigate",
+        "url": "http://localhost:4000/login"
+      },
+      "waitFor": {
+        "waitUntil": "pageLoad"
+      },
+      "risk": "reversible"
     },
     {
       "stepId": "fill-username",
       "action": {
         "actionType": "fill",
         "target": [
-          { "strategy": "role", "role": "textbox", "accessibleName": "User ID" },
-          { "strategy": "adjacent", "labelText": "User ID", "direction": "next", "targetRole": "textbox" }
+          {
+            "strategy": "role",
+            "role": "textbox",
+            "accessibleName": "User ID"
+          },
+          {
+            "strategy": "adjacent",
+            "labelText": "User ID",
+            "direction": "next",
+            "targetRole": "textbox"
+          }
         ],
         "value": "{{operatorUserId}}"
-      }
+      },
+      "risk": "reversible"
     },
     {
       "stepId": "fill-password",
       "action": {
         "actionType": "fill",
         "target": [
-          { "strategy": "adjacent", "labelText": "Password", "direction": "next", "targetRole": "textbox" },
-          { "strategy": "css", "selector": "#ctl00_ContentMain_txtPassword" }
+          {
+            "strategy": "adjacent",
+            "labelText": "Password",
+            "direction": "next",
+            "targetRole": "textbox"
+          },
+          {
+            "strategy": "css",
+            "selector": "#ctl00_ContentMain_txtPassword"
+          }
         ],
         "value": "{{operatorPassword}}"
-      }
+      },
+      "risk": "reversible"
     },
     {
       "stepId": "submit-login",
       "action": {
         "actionType": "click",
-        "target": [{ "strategy": "role", "role": "button", "accessibleName": "Sign In" }]
+        "target": [
+          {
+            "strategy": "role",
+            "role": "button",
+            "accessibleName": "Sign In"
+          }
+        ]
       },
-      "waitFor": { "waitUntil": "textPresent", "text": "Member Search" }
+      "waitFor": {
+        "waitUntil": "textPresent",
+        "text": "Member Search"
+      },
+      "risk": "reversible"
     },
     {
       "stepId": "fill-member-number",
       "action": {
         "actionType": "fill",
         "target": [
-          { "strategy": "adjacent", "labelText": "Member No", "direction": "next", "targetRole": "textbox" },
-          { "strategy": "css", "selector": "#ctl00_ContentMain_txtMbrNo" }
+          {
+            "strategy": "adjacent",
+            "labelText": "Member No",
+            "direction": "next",
+            "targetRole": "textbox"
+          },
+          {
+            "strategy": "css",
+            "selector": "#ctl00_ContentMain_txtMbrNo"
+          }
         ],
         "value": "{{memberNumber}}"
-      }
+      },
+      "risk": "reversible"
     },
     {
       "stepId": "submit-search",
       "action": {
         "actionType": "click",
-        "target": [{ "strategy": "role", "role": "button", "accessibleName": "Search" }]
+        "target": [
+          {
+            "strategy": "role",
+            "role": "button",
+            "accessibleName": "Search"
+          }
+        ]
       },
-      "waitFor": { "waitUntil": "textPresent", "text": "Search Results" }
+      "waitFor": {
+        "waitUntil": "textPresent",
+        "text": "Search Results"
+      },
+      "risk": "reversible"
     },
     {
       "stepId": "open-member-detail",
@@ -96,10 +158,18 @@
             "selector": "#ctl00_ContentMain_grdResults tbody tr td:nth-child(2) a",
             "matchIndex": 0
           },
-          { "strategy": "css", "selector": ".ctl00_Grid tbody a", "matchIndex": 0 }
+          {
+            "strategy": "css",
+            "selector": ".ctl00_Grid tbody a",
+            "matchIndex": 0
+          }
         ]
       },
-      "waitFor": { "waitUntil": "textPresent", "text": "Share Summary" }
+      "waitFor": {
+        "waitUntil": "textPresent",
+        "text": "Share Summary"
+      },
+      "risk": "reversible"
     }
   ],
   "checkpoints": [
@@ -107,18 +177,32 @@
       "checkpointId": "reached-search",
       "afterStepId": "submit-login",
       "allOf": [
-        { "assert": "text_present", "text": "Member Search" },
-        { "assert": "text_absent", "text": "Invalid user id or password" }
+        {
+          "assert": "text_present",
+          "text": "Member Search"
+        },
+        {
+          "assert": "text_absent",
+          "text": "Invalid user id or password"
+        }
       ]
     },
     {
       "checkpointId": "reached-member-detail",
       "afterStepId": "open-member-detail",
       "allOf": [
-        { "assert": "text_present", "text": "Share Summary" },
+        {
+          "assert": "text_present",
+          "text": "Share Summary"
+        },
         {
           "assert": "element_present",
-          "target": [{ "strategy": "text", "text": "Regular Share Savings" }]
+          "target": [
+            {
+              "strategy": "text",
+              "text": "Regular Share Savings"
+            }
+          ]
         }
       ]
     }
@@ -127,18 +211,89 @@
     {
       "outputName": "memberName",
       "target": [
-        { "strategy": "adjacent", "labelText": "Name", "direction": "next" },
-        { "strategy": "css", "selector": ".ctl00_MemberInfo tr:nth-child(1) td:nth-child(4)" }
+        {
+          "strategy": "adjacent",
+          "labelText": "Name",
+          "direction": "next"
+        },
+        {
+          "strategy": "css",
+          "selector": ".ctl00_MemberInfo tr:nth-child(1) td:nth-child(4)"
+        }
       ],
       "valueType": "string"
     },
     {
       "outputName": "savingsBalance",
       "target": [
-        { "strategy": "adjacent", "labelText": "Regular Share Savings", "direction": "next" },
-        { "strategy": "css", "selector": "#ctl00_ContentMain_grdShares tbody tr:nth-child(1) td:nth-child(3)" }
+        {
+          "strategy": "adjacent",
+          "labelText": "Regular Share Savings",
+          "direction": "next"
+        },
+        {
+          "strategy": "css",
+          "selector": "#ctl00_ContentMain_grdShares tbody tr:nth-child(1) td:nth-child(3)"
+        }
       ],
       "valueType": "number"
+    }
+  ],
+  "businessOutcomes": [
+    {
+      "code": "member_not_found",
+      "message": "No member matched that member number.",
+      "signal": {
+        "assert": "text_present",
+        "text": "No records matched"
+      },
+      "condition": {
+        "when": "step_failed",
+        "stepId": "open-member-detail",
+        "failureCode": "locator_not_found"
+      }
+    },
+    {
+      "code": "access_denied",
+      "message": "You are not authorized to view this member record.",
+      "signal": {
+        "assert": "text_present",
+        "text": "SEC-MBR-004"
+      },
+      "condition": {
+        "when": "step_failed",
+        "stepId": "open-member-detail",
+        "failureCode": "locator_not_found"
+      }
+    },
+    {
+      "code": "validation_rejected",
+      "message": "The search form rejected the member number.",
+      "signal": {
+        "assert": "text_present",
+        "text": "VAL-MBR-001"
+      },
+      "condition": {
+        "when": "step_failed",
+        "stepId": "submit-search",
+        "failureCode": "locator_not_found"
+      }
+    }
+  ],
+  "expectedDialogs": [],
+  "interstitials": [
+    {
+      "name": "scheduled maintenance",
+      "when": {
+        "assert": "text_present",
+        "text": "SCHEDULED MAINTENANCE"
+      },
+      "dismiss": [
+        {
+          "strategy": "css",
+          "selector": "#ctl00_ContentMain_btnDismissNotice"
+        }
+      ]
     }
   ]
 }

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { Action } from './action';
 import { Observation } from './observation';
-import { Outcome } from './outcome';
+import { Outcome, Recovery } from './outcome';
 import { ActionClass, PolicyDecision } from './policy';
 
 export const Actor = z.enum(['system', 'model', 'operator']);
@@ -55,6 +55,31 @@ export const RunLogEntry = z.discriminatedUnion('entryType', [
     outputName: z.string().min(1),
     rawValue: z.string(),
     coerced: z.boolean(),
+  }),
+  // A native dialog blocks the page until something answers it. Recorded
+  // whether or not the capability expected it, because "a dialog appeared and
+  // was dismissed" is the fact a caller needs to explain what the run saw.
+  z.object({
+    ...commonEntryFields,
+    entryType: z.literal('dialog'),
+    kind: z.string().min(1),
+    message: z.string(),
+    expected: z.boolean(),
+  }),
+  z.object({
+    ...commonEntryFields,
+    entryType: z.literal('recovery'),
+    recovery: Recovery,
+  }),
+  // Why a business outcome did or did not fire. A rule whose condition matched
+  // but whose signal was absent is the interesting line in the log: it is the
+  // run declining to call something a business answer on the strength of a
+  // failed checkpoint alone.
+  z.object({
+    ...commonEntryFields,
+    entryType: z.literal('outcome_rule'),
+    code: z.string().min(1),
+    signalPresent: z.boolean(),
   }),
   z.object({
     ...commonEntryFields,

@@ -119,11 +119,52 @@ const policy: Policy = {
   allowedOrigins: ['http://localhost:4100'],
   rules: [{ actionClass: 'mutate', decision: 'allow' }],
   redactedFieldNames: ['password'],
+  irreversibleControlLabels: ['post', 'transfer', 'confirm'],
   redactedPatterns: [],
   maxStepsPerRun: 30,
 };
 
+// The same flow, ending on a button that commits rather than one that searches.
+const loginAndPost: RunLog = {
+  ...loginAndLookUp,
+  entries: [
+    observed(0, 'http://localhost:4100/login', 'Sign On', loginPage),
+    acted(1, { actionType: 'fill', target: targeting('element-1'), value: 'analyst' }),
+    observed(2, 'http://localhost:4100/login', 'Sign On', loginPage),
+    acted(3, { actionType: 'click', target: targeting('element-3') }),
+    observed(4, 'http://localhost:4100/transfer', 'Transfer', [
+      textbox('element-8', 'Amount', false),
+      button('element-9', 'Post Transfer'),
+    ]),
+    acted(5, { actionType: 'click', target: targeting('element-9') }),
+    observed(6, 'http://localhost:4100/receipt', 'Receipt', [
+      cell('element-10', 'Confirmation', 'TRN-4471'),
+    ]),
+  ],
+};
+
 describe('Capability recording', () => {
+  test('a step that commits is recorded as irreversible', () => {
+    const capability = recordCapability(loginAndPost, { ...options, policy });
+
+    const posting = capability.steps.find((step) => step.stepId.includes('postTransfer'));
+    expect(posting?.risk).toBe('irreversible');
+
+    // Everything else on the same flow stays reversible, so the marking means
+    // something narrower than "this step clicks".
+    const signOn = capability.steps.find((step) => step.stepId.includes('signOn'));
+    expect(signOn?.risk).toBe('reversible');
+  });
+
+  test('without a policy nothing is claimed to be irreversible', () => {
+    // The list of committing controls is policy, so a recording made without one
+    // has no basis for the claim. Defaulting to reversible is the honest answer;
+    // replay then treats the artifact as unguarded rather than as safe.
+    const capability = recordCapability(loginAndPost, options);
+
+    expect(capability.steps.every((step) => step.risk === 'reversible')).toBe(true);
+  });
+
   test('emits a usable artifact that satisfies the schema', () => {
     const capability = recordCapability(loginAndLookUp, options);
 

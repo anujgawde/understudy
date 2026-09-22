@@ -12,6 +12,13 @@ import { BusinessOutcomeRule, type Capability } from '@understudy/schemas';
  * So the names come from a model, once, at record time. Replay still runs with
  * no model in the loop — that is the guarantee that matters, and it is about
  * replay, not about recording, which has already paid for a model.
+ *
+ * What the model proposes here is a hypothesis about a page it only ever saw
+ * succeed, which is why each rule has to carry a signal replay can check rather
+ * than firing on a failed checkpoint alone. A wrong signal costs a business
+ * outcome that falls through to a plain failure — visible, and fixable in the
+ * artifact. A missing one would cost every failure being reported as whichever
+ * rule came first, which is neither.
  */
 const proposeOutcomesTool = {
   name: 'proposeBusinessOutcomes',
@@ -42,8 +49,16 @@ const proposeOutcomesTool = {
                 'One sentence an operator reads. States what is true, e.g. ' +
                 '"No member matched that member number."',
             },
+            signalText: {
+              type: 'string',
+              description:
+                'Text the page itself displays when this outcome happens, quoted closely enough ' +
+                'to appear nowhere else — e.g. "No records matched". This is what separates this ' +
+                'outcome from every other reason the same checkpoint could fail. Prefer wording ' +
+                'seen during the run; never describe the situation in your own words.',
+            },
           },
-          required: ['checkpointId', 'code', 'message'],
+          required: ['checkpointId', 'code', 'message', 'signalText'],
         },
       },
     },
@@ -64,8 +79,15 @@ checkpoint can fail for two very different reasons:
     and nobody can act on it except an engineer.
 
 Report only the first kind. For each checkpoint that can plausibly fail because of a legitimate
-negative answer, give a code and a message. Skip checkpoints that can only fail when something
-is broken — a login page failing to load is a malfunction, not a business outcome.
+negative answer, give a code, a message, and the text the page shows when it happens. Skip
+checkpoints that can only fail when something is broken — a login page failing to load is a
+malfunction, not a business outcome.
+
+The signal text matters as much as the code. A checkpoint failing tells replay only that the
+expected result is missing: an empty result set, a rejected input and an expired session all
+look identical through it. The text you give is what replay looks for on the page before it
+reports your outcome, so a vague signal makes a wrong answer, not a missing one. Give wording
+that appears when this outcome happens and not otherwise.
 
 Most capabilities have one or two business outcomes. Some have none; reporting an empty list is
 a valid and correct answer. Never invent an outcome for a checkpoint that is not listed.`;
@@ -138,14 +160,18 @@ export async function shapeBusinessOutcomes(
 
   for (const entry of proposed) {
     if (typeof entry !== 'object' || entry === null) continue;
-    const { checkpointId, code, message } = entry as Record<string, unknown>;
+    const { checkpointId, code, message, signalText } = entry as Record<string, unknown>;
 
     if (typeof checkpointId !== 'string' || !knownCheckpointIds.has(checkpointId)) continue;
     if (typeof code !== 'string' || takenCodes.has(code)) continue;
+    // A rule with no signal is the ambiguous rule this whole mechanism exists to
+    // prevent, so it is dropped rather than recorded without one.
+    if (typeof signalText !== 'string' || signalText.trim() === '') continue;
 
     const parsed = BusinessOutcomeRule.safeParse({
       code,
       message,
+      signal: { assert: 'text_present', text: signalText.trim() },
       condition: { when: 'checkpoint_failed', checkpointId },
     });
     if (!parsed.success) continue;

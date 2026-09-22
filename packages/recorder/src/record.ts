@@ -6,8 +6,10 @@ import type {
   ObservedElement,
   RunLog,
   Step,
+  StepRisk,
   ValueType,
 } from '@understudy/schemas';
+import { namesIrreversibleControl } from '@understudy/schemas';
 import { isSensitiveField } from '@understudy/redaction';
 import { distillTrace } from './distill.js';
 import { deriveLadder, labelFor } from './ladder.js';
@@ -100,6 +102,29 @@ function inferValueType(rawValue: string): ValueType {
   return cleaned !== '' && !Number.isNaN(Number(cleaned)) ? 'number' : 'string';
 }
 
+/**
+ * Recorded at record time rather than judged at replay time, because by the
+ * moment replay is looking at the button it is already on the page it would be
+ * changing. Only a click can be irreversible: a navigation goes somewhere and a
+ * fill stages a value, while the click on "Post" is the step that commits it.
+ */
+function riskOf(
+  action: Step['action'],
+  element: ObservedElement | undefined,
+  options: RecordingOptions,
+): StepRisk {
+  if (action.actionType !== 'click' || options.policy === undefined) return 'reversible';
+
+  const names = [
+    element?.accessibleName,
+    element?.domId,
+    element?.testId,
+    ...(element?.nearbyText ?? []),
+  ];
+
+  return namesIrreversibleControl(options.policy, names) ? 'irreversible' : 'reversible';
+}
+
 export function recordCapability(runLog: RunLog, options: RecordingOptions): Capability {
   const distilledSteps = distillTrace(runLog);
   if (distilledSteps.length === 0) {
@@ -177,6 +202,7 @@ export function recordCapability(runLog: RunLog, options: RecordingOptions): Cap
       stepId,
       action,
       ...(movedToANewPage && { waitFor: { waitUntil: 'pageLoad' as const } }),
+      risk: riskOf(action, element, options),
     });
 
     // A step that moved the flow to a new page is the one worth asserting on:
@@ -257,6 +283,8 @@ export function recordCapability(runLog: RunLog, options: RecordingOptions): Cap
     checkpoints,
     extractions,
     businessOutcomes: [],
+    expectedDialogs: [],
+    interstitials: [],
     provenance: {
       discoveredByModel: options.modelId,
       discoveryRunId: runLog.runId,

@@ -9,6 +9,7 @@ const policy: Policy = {
   allowedOrigins: ['http://localhost:3000'],
   rules: [{ actionClass: 'mutate', decision: 'allow' }],
   redactedFieldNames: ['password', 'card number', 'date of birth'],
+  irreversibleControlLabels: ['post', 'transfer', 'confirm'],
   redactedPatterns: ['\\b\\d{3}-\\d{2}-\\d{4}\\b'],
   maxStepsPerRun: 30,
 };
