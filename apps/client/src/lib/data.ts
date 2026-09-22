@@ -1,4 +1,22 @@
-import type { Capability, DiscoveryRun, Intervention, LedgerEntry, RunLog } from '@/types';
+import type {
+  Capability,
+  DiscoveryRun,
+  Intervention,
+  LedgerEntry,
+  PolicyProfile,
+  RunLog,
+  ShapingSession,
+} from '@/types';
+import { ESCALATION_WORTHY_FAILURES } from '@understudy/session';
+import type {
+  Intervention as SchemaIntervention,
+  LedgerEntry as SchemaLedgerEntry,
+} from '@understudy/session';
+import type {
+  Capability as SchemaCapability,
+  Policy as SchemaPolicy,
+  RunLog as SchemaRunLog,
+} from '@understudy/schemas';
 import {
   readCapabilities as readCapabilitiesFromDisk,
   readCapability as readCapabilityFromDisk,
@@ -7,16 +25,27 @@ import {
   readDiscoveryRunLog as readDiscoveryFromDisk,
   readInterventions as readInterventionsFromDisk,
   readLedger as readLedgerFromDisk,
+  readPolicy as readPolicyFromDisk,
 } from './evidence-reader';
 import {
   adaptCapability,
   adaptReplayRunLog,
   adaptDiscoveryRunLog,
   adaptIntervention,
+  adaptPolicy,
+  adaptShaping,
 } from './adapters';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
+/**
+ * Standalone by default, server-backed when NEXT_PUBLIC_API_URL is set. Both
+ * paths return the same console types: the server speaks the schema, the
+ * evidence folder holds the schema, and the adapters are the one place either
+ * becomes something a screen can draw. Returning raw schema objects on the
+ * server path — which this did — meant every page worked standalone and threw
+ * the moment a server was connected.
+ */
 function useServer(): boolean {
   return !!API_URL;
 }
@@ -29,7 +58,8 @@ async function fetchJson<T>(path: string): Promise<T> {
 
 export async function getCapabilities(): Promise<Capability[]> {
   if (useServer()) {
-    return fetchJson<Capability[]>('/capabilities');
+    const schemas = await fetchJson<SchemaCapability[]>('/capabilities');
+    return schemas.map(adaptCapability);
   }
 
   const schemas = await readCapabilitiesFromDisk();
@@ -39,7 +69,7 @@ export async function getCapabilities(): Promise<Capability[]> {
 export async function getCapability(capabilityId: string): Promise<Capability | null> {
   if (useServer()) {
     try {
-      return await fetchJson<Capability>(`/capabilities/${capabilityId}`);
+      return adaptCapability(await fetchJson<SchemaCapability>(`/capabilities/${capabilityId}`));
     } catch {
       return null;
     }
@@ -52,7 +82,20 @@ export async function getCapability(capabilityId: string): Promise<Capability | 
 export async function getReplayRuns(capabilityId?: string): Promise<RunLog[]> {
   if (useServer()) {
     const query = capabilityId ? `?capabilityId=${capabilityId}` : '';
-    return fetchJson<RunLog[]>(`/runs${query}`);
+    const [runLogs, schemas] = await Promise.all([
+      fetchJson<SchemaRunLog[]>(`/runs${query}`),
+      fetchJson<SchemaCapability[]>('/capabilities'),
+    ]);
+
+    return runLogs
+      .filter((runLog) => runLog.mode === 'replay')
+      .map((runLog) =>
+        adaptReplayRunLog(
+          runLog,
+          schemas.find((one) => one.capabilityId === runLog.capabilityId) ?? null,
+          `server:${runLog.runId}`,
+        ),
+      );
   }
 
   const entries = await readReplayRunsFromDisk(capabilityId);
@@ -66,7 +109,13 @@ export async function getReplayRuns(capabilityId?: string): Promise<RunLog[]> {
 export async function getReplayRun(runId: string): Promise<RunLog | null> {
   if (useServer()) {
     try {
-      return await fetchJson<RunLog>(`/runs/${runId}`);
+      const runLog = await fetchJson<SchemaRunLog>(`/runs/${runId}`);
+      const schemas = await fetchJson<SchemaCapability[]>('/capabilities');
+      return adaptReplayRunLog(
+        runLog,
+        schemas.find((one) => one.capabilityId === runLog.capabilityId) ?? null,
+        `server:${runLog.runId}`,
+      );
     } catch {
       return null;
     }
@@ -83,7 +132,7 @@ export async function getReplayRun(runId: string): Promise<RunLog | null> {
 export async function getDiscoveryRunByRunId(runId: string): Promise<DiscoveryRun | null> {
   if (useServer()) {
     try {
-      return await fetchJson<DiscoveryRun>(`/runs/${runId}`);
+      return adaptDiscoveryRunLog(await fetchJson<SchemaRunLog>(`/runs/${runId}`));
     } catch {
       return null;
     }
@@ -100,7 +149,9 @@ export async function getDiscoveryRunByRunId(runId: string): Promise<DiscoveryRu
 export async function getDiscoveryRun(capabilityId: string): Promise<DiscoveryRun | null> {
   if (useServer()) {
     try {
-      return await fetchJson<DiscoveryRun>(`/runs?capabilityId=${capabilityId}&mode=discovery`);
+      const runLogs = await fetchJson<SchemaRunLog[]>(`/runs?capabilityId=${capabilityId}`);
+      const discovery = runLogs.find((runLog) => runLog.mode === 'discovery');
+      return discovery ? adaptDiscoveryRunLog(discovery) : null;
     } catch {
       return null;
     }
@@ -119,7 +170,18 @@ export async function getDiscoveryRun(capabilityId: string): Promise<DiscoveryRu
  */
 export async function getInterventions(): Promise<Intervention[]> {
   if (useServer()) {
-    return fetchJson<Intervention[]>('/interventions');
+    const [records, schemas] = await Promise.all([
+      fetchJson<SchemaIntervention[]>('/interventions'),
+      fetchJson<SchemaCapability[]>('/capabilities'),
+    ]);
+
+    return records.map((intervention) =>
+      adaptIntervention(
+        intervention,
+        schemas.find((one) => one.capabilityId === intervention.context.capabilityId) ?? null,
+        `server:${intervention.context.runId}`,
+      ),
+    );
   }
 
   const [records, capabilities] = await Promise.all([
@@ -148,15 +210,9 @@ export async function getIntervention(interventionId: string): Promise<Intervent
  * folds back into an artifact.
  */
 export async function getLedger(): Promise<LedgerEntry[]> {
-  if (useServer()) {
-    try {
-      return await fetchJson<LedgerEntry[]>('/interventions/ledger');
-    } catch {
-      return [];
-    }
-  }
-
-  const entries = await readLedgerFromDisk();
+  const entries = useServer()
+    ? await fetchJson<SchemaLedgerEntry[]>('/interventions/ledger').catch(() => [])
+    : await readLedgerFromDisk();
   return entries.map((entry) => ({
     entryId: entry.entryId,
     occurredAt: new Date(entry.occurredAt).toLocaleTimeString('en-GB', {
@@ -192,4 +248,47 @@ function describeLedgerAction(action: string, detail?: Record<string, unknown>):
     default:
       return action;
   }
+}
+
+/**
+ * The policy that governed the most recent run that recorded one. Read from the
+ * run rather than from a config file, so the screen shows what was enforced
+ * rather than what is configured somewhere.
+ */
+export async function getPolicyProfile(): Promise<PolicyProfile | null> {
+  if (useServer()) {
+    try {
+      const policies = await fetchJson<SchemaPolicy[]>('/policy');
+      const policy = policies[0];
+      return policy ? adaptPolicy(policy, [...ESCALATION_WORTHY_FAILURES], 'server:/policy') : null;
+    } catch {
+      return null;
+    }
+  }
+
+  const found = await readPolicyFromDisk();
+  if (!found) return null;
+
+  return adaptPolicy(found.policy, [...ESCALATION_WORTHY_FAILURES], found.evidencePath);
+}
+
+/**
+ * How one capability was shaped out of its discovery run. Keyed by capability
+ * rather than by run, because the artifact is the thing being reviewed and the
+ * run is only where it came from.
+ */
+export async function getShaping(capabilityId: string): Promise<ShapingSession | null> {
+  const capability = await getCapability(capabilityId);
+  if (!capability) return null;
+
+  const discovery = await getDiscoveryRun(capabilityId);
+  const schemas = await readCapabilitiesFromDisk();
+  const schema = schemas.find((one) => one.capabilityId === capabilityId);
+  if (!schema) return null;
+
+  return adaptShaping(
+    schema,
+    discovery?.runId ?? 'no discovery run recorded',
+    `evidence/${capabilityId}`,
+  );
 }
