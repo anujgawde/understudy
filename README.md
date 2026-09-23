@@ -214,9 +214,11 @@ Ollama exists so the discovery loop can be exercised without spending anything.
 
 ### 1. Surface — the only thing that touches a browser
 
-`packages/surface` wraps Playwright behind a six-method interface: `observe`, `act`, `resolve`,
-`extractText`, `pageUrl`, `hasText`. Everything above it is browser-agnostic and trivially
-fakeable in tests, which is why most of the suite runs without a browser at all.
+`packages/surface` wraps Playwright behind one interface — `observe`, `act`, `resolve`,
+`extractText`, `pageUrl`, `hasText`, plus `drainDialogs`, `lastResponseStatus` and `screenshot`
+for the conditions replay has to notice rather than ask about. Everything above it is
+browser-agnostic and trivially fakeable in tests, which is why most of the suite runs without a
+browser at all.
 
 `observe()` returns a structured snapshot of the page — roles, accessible names, nearby text —
 rather than raw HTML, and stamps each interesting element with a temporary
@@ -306,6 +308,7 @@ artifact is rejected at the boundary rather than halfway through a run:
   "steps": [
     {
       "stepId": "fill-member-number",
+      "risk": "reversible", // "irreversible" stops replay unless approved
       "action": {
         "actionType": "fill",
         "target": [
@@ -329,11 +332,14 @@ artifact is rejected at the boundary rather than halfway through a run:
   // Where the answers are read from.
   "extractions": [{ "outputName": "savingsBalance", "target": [/* ... */], "valueType": "number" }],
 
-  // Which failures are actually ordinary business answers.
+  // Which failures are actually ordinary business answers. The condition says
+  // what broke; the signal says the page positively confirms THIS reason.
+  // Without the signal, one rule fires for every way that checkpoint can fail.
   "businessOutcomes": [
     {
       "code": "member_not_found",
       "message": "No member matched that number.",
+      "signal": { "assert": "text_present", "text": "No records matched" },
       "condition": { "when": "checkpoint_failed", "checkpointId": "results-present" },
     },
   ],
@@ -486,9 +492,11 @@ versus `SEC-MBR-004`. That is the whole argument for signals on outcome rules: w
 rule keyed on a failed step fires for every reason that step can fail, and a permission denial
 comes back to the caller as "no such member".
 
-The right-hand column is what the shipped example artifact reports; a freshly discovered
-artifact is only as good as the rules the shaping step proposed for it, which is why it is worth
-checking against a real discovery rather than asserting here.
+The right-hand column is what the shipped example artifact reports. A freshly discovered artifact
+is only as good as the rules the shaping step proposed for it — and when this table was run
+against a real Gemini discovery, four of the nine held and five did not. That result, and what it
+says about which half of the system is actually proven, is under
+[Known gaps](#known-gaps) and in REPORT §3.
 
 ---
 
@@ -535,7 +543,7 @@ sitting side by side is the clearest possible demonstration that the taxonomy is
 ## Development
 
 ```bash
-npm test              # 239 tests, 26 files
+npm test              # 243 tests, 27 files
 npm run typecheck
 npm run lint
 npm run build
@@ -545,16 +553,17 @@ npm run format
 Most tests run without a browser, because everything above the Surface talks to the interface
 rather than to Playwright.
 
-| Package   | Tests |
-| --------- | ----- |
-| replay    | 47    |
-| session   | 39    |
-| recorder  | 33    |
-| surface   | 28    |
-| schemas   | 22    |
-| redaction | 10    |
-| cli       | 6     |
-| discovery | 6     |
+| Package        | Tests |
+| -------------- | ----- |
+| replay         | 63    |
+| session        | 42    |
+| recorder       | 36    |
+| surface        | 35    |
+| schemas        | 27    |
+| cli            | 16    |
+| redaction      | 10    |
+| discovery      | 9     |
+| model-provider | 5     |
 
 ---
 
@@ -589,17 +598,22 @@ that makes artifacts trustworthy.
 
 Current limitations, stated plainly so nobody has to discover them the hard way.
 
-**The discovery half is less proven than the replay half.** A real Gemini discovery run
-succeeded end to end and its artifact replayed with no model in the loop. Checkpoint derivation,
-outcome shaping and intent matching all landed after that run and are covered by unit tests with
-a stand-in provider rather than by a live one. The replay side, by contrast, is exercised
-against the real target app in a browser on every test run.
+**A discovered artifact handles its happy path and little else.** This is measured, not
+estimated. The artifact in `evidence/` was discovered by Gemini against this flow and then
+replayed through all nine member numbers in the table above. It got four right — the success
+path, the unexpected dialog, the app error and the session expiry — and all four of those are
+conditions the *engine* detects by mechanism, with no help from the artifact. Every condition
+that depends on the artifact declaring something was wrong: the model proposed one business
+outcome rule and keyed it on a checkpoint that cannot be reached in the case it names, proposed
+none at all for the validation error or the permission denial, derived a locator from the name
+of the specific member it happened to look up, and guarded an extraction with an assertion that
+passes on an empty cell.
 
-**Outcome signals are a model's hypothesis.** The recorder asks the model to propose the text
-replay should look for when an outcome fires, and the model only ever saw the flow succeed. A
-wrong signal costs a business outcome that falls through to a plain `failed` — visible in the
-run log and fixable in the artifact. A rule proposed with no signal at all is dropped rather
-than recorded, because a rule without one fires on any cause and that is worse than no rule.
+None of that is the model being careless, and the containment works — a wrong rule degrades to a
+plain `failed` rather than a confidently wrong answer. But it is the honest state of the
+pipeline: replay is solid, and the recorder that has to feed it is the weak half. REPORT §3
+breaks down the three faults and §7 proposes a fix for each. `scripts/verify.ts` reproduces the
+table against any artifact you point it at.
 
 **Intent matching doesn't scale as written.** Every capability in the library goes into the
 prompt on every request, so cost and latency grow with the catalogue and precision drops as
@@ -611,14 +625,6 @@ definition, and that path is sound. The fallback path searches the goal text for
 string, which fails silently if the model normalises what it types — goal says `12345`, field
 wants `0012345` — and bakes the value in as a constant. The failure is silent and in the unsafe
 direction.
-
-**`approved` is the model's own word.** A capability is only recorded when the model reports
-success, and nothing checks that claim against the page. Now that checkpoints exist there is a
-real check available: have discovery replay its own fresh artifact once and approve only if the
-checkpoints hold and the outputs match.
-
-**Re-discovery overwrites.** A goal that slugs to an existing capability id replaces it.
-`version` exists in the schema and is always `1`.
 
 **Wait conditions are the weak point for determinism.** `fixedDelay`, CSS rungs and `textPresent`
 waits are all web-specific and brittle in different ways. A `textPresent` wait is the worst:
