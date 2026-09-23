@@ -21,7 +21,6 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.52.0",
     "@google/genai": "^2.23.0"
   }
 }

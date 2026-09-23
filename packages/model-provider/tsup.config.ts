@@ -8,5 +8,5 @@ export default defineConfig({
   clean: true,
   target: 'node24',
   treeshake: true,
-  external: ['@anthropic-ai/sdk', '@google/genai'],
+  external: ['@google/genai'],
 });

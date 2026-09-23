@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { parseArgs } from 'node:util';
 import { chromium } from 'playwright';
 import type { ModelProvider } from '@understudy/model-provider';
-import { AnthropicProvider, GeminiProvider, OllamaProvider } from '@understudy/model-provider';
+import { GeminiProvider, OllamaProvider } from '@understudy/model-provider';
 import type { Policy, RunLogEntry } from '@understudy/schemas';
 import { PlaywrightSurface } from '@understudy/surface';
 import { discover } from '@understudy/discovery';
@@ -32,7 +32,7 @@ function parseCliArguments() {
   const goal = positionals[0];
   if (!goal) {
     console.error(
-      'Usage: discover <goal> [--input key=value ...] [--provider gemini|anthropic|ollama] ' +
+      'Usage: discover <goal> [--input key=value ...] [--provider gemini|ollama] ' +
         '[--url http://...] [--headed] [--output dir] [--model model-id] [--maxSteps n] ' +
         '[--allow-mutations]',
     );
@@ -40,10 +40,8 @@ function parseCliArguments() {
   }
 
   const provider = values.provider ?? 'gemini';
-  if (provider !== 'gemini' && provider !== 'anthropic' && provider !== 'ollama') {
-    console.error(
-      `Unknown provider: "${provider}" (expected "gemini", "anthropic", or "ollama")`,
-    );
+  if (provider !== 'gemini' && provider !== 'ollama') {
+    console.error(`Unknown provider: "${provider}" (expected "gemini" or "ollama")`);
     process.exit(1);
   }
 
@@ -60,7 +58,7 @@ function parseCliArguments() {
   return {
     goal,
     inputs,
-    provider: provider as 'gemini' | 'anthropic' | 'ollama',
+    provider: provider as 'gemini' | 'ollama',
     startUrl: values.url ?? 'http://localhost:4000',
     headed: values.headed ?? false,
     outputDirectory: values.output ?? 'evidence',
@@ -156,9 +154,7 @@ async function main(): Promise<void> {
   const args = parseCliArguments();
 
   let modelProvider: ModelProvider;
-  if (args.provider === 'anthropic') {
-    modelProvider = new AnthropicProvider({ modelId: args.modelId });
-  } else if (args.provider === 'ollama') {
+  if (args.provider === 'ollama') {
     modelProvider = new OllamaProvider({ modelId: args.modelId });
   } else {
     modelProvider = new GeminiProvider({ modelId: args.modelId });

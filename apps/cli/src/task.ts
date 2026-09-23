@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { parseArgs } from 'node:util';
 import type { ModelProvider } from '@understudy/model-provider';
-import { AnthropicProvider, GeminiProvider, OllamaProvider } from '@understudy/model-provider';
+import { GeminiProvider, OllamaProvider } from '@understudy/model-provider';
 import { Capability } from '@understudy/schemas';
 import { matchCapability } from './match.js';
 
@@ -25,15 +25,15 @@ function parseCliArguments() {
   const goal = positionals[0];
   if (!goal) {
     console.error(
-      'Usage: task <goal> [--input key=value ...] [--provider gemini|anthropic|ollama] ' +
+      'Usage: task <goal> [--input key=value ...] [--provider gemini|ollama] ' +
         '[--url http://...] [--headed] [--output dir] [--model model-id] [--approve-irreversible]',
     );
     process.exit(1);
   }
 
   const provider = values.provider ?? 'gemini';
-  if (provider !== 'gemini' && provider !== 'anthropic' && provider !== 'ollama') {
-    console.error(`Unknown provider: "${provider}" (expected "gemini", "anthropic", or "ollama")`);
+  if (provider !== 'gemini' && provider !== 'ollama') {
+    console.error(`Unknown provider: "${provider}" (expected "gemini" or "ollama")`);
     process.exit(1);
   }
 
@@ -50,7 +50,7 @@ function parseCliArguments() {
   return {
     goal,
     inputs,
-    provider: provider as 'gemini' | 'anthropic' | 'ollama',
+    provider: provider as 'gemini' | 'ollama',
     startUrl: values.url ?? 'http://localhost:4000',
     headed: values.headed ?? false,
     outputDirectory: values.output ?? 'evidence',
@@ -93,8 +93,6 @@ async function loadCapabilities(
 
 function buildModelProvider(args: ReturnType<typeof parseCliArguments>): ModelProvider {
   switch (args.provider) {
-    case 'anthropic':
-      return new AnthropicProvider({ modelId: args.modelId });
     case 'ollama':
       return new OllamaProvider({ modelId: args.modelId });
     case 'gemini':

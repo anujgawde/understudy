@@ -15,7 +15,7 @@ export class GeminiProvider implements ModelProvider {
   // Gemini 3 rejects a replayed function call whose thought signature is missing, and the
   // signature belongs to the model rather than to the call, so it cannot be rebuilt from
   // the conversation. Held here by tool call id rather than on the shared ToolCall type,
-  // which the Anthropic and Ollama adapters also use.
+  // which the Ollama adapter also uses.
   private readonly thoughtSignatures = new Map<string, string>();
 
   constructor(options?: GeminiProviderOptions) {
@@ -60,7 +60,7 @@ export class GeminiProvider implements ModelProvider {
       }
     }
 
-    // Collected rather than overwritten; see the Anthropic adapter.
+    // Collected rather than overwritten.
     const rationaleParts: string[] = [];
     const toolCalls: ToolCall[] = [];
 
