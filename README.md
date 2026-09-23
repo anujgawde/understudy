@@ -24,54 +24,111 @@ captured during exploration so that repetition never needs the model again.
 
 ---
 
-## Quick start
+## Setup
 
-Requires **Node 24 or newer** (`node --version`).
+### Prerequisites
+
+| Requirement          | Why                                                          | Check                                                     |
+| -------------------- | ------------------------------------------------------------ | --------------------------------------------------------- |
+| **Node 24 or newer** | The workspace targets `node24`. Node 22 will fail the build. | `node --version`                                          |
+| **npm 10 or newer**  | Workspaces are used throughout.                              | `npm --version`                                           |
+| **A Gemini API key** | Only needed for discovery. Replay needs nothing.             | [aistudio.google.com](https://aistudio.google.com/apikey) |
+
+Ollama can be used instead of a Gemini key — see [Using Ollama](#using-ollama). Replay works
+with no model access at all.
+
+### Step 1 — Install
 
 ```bash
+git clone <repository-url>
+cd understudy
 npm install
 npx playwright install chromium
 ```
 
-Start the target application — a deliberately awkward legacy banking app to automate against:
+`npx playwright install chromium` downloads the browser Playwright drives. It is a separate
+step because Playwright ships the library, not the browser binary.
+
+### Step 2 — Configure
+
+```bash
+cp .env.example .env
+```
+
+Open `.env` and set `GEMINI_API_KEY`. Everything else has a working default. If you only want
+to replay the shipped artifact, you can skip this step entirely.
+
+### Step 3 — Start the target application
+
+The target app is the thing being automated — a deliberately awkward legacy banking portal.
+**Leave this running in its own terminal:**
 
 ```bash
 npm run target-app          # http://localhost:4000
 ```
 
-Point a model at it. Gemini is the default provider:
+Open http://localhost:4000 in a browser to confirm it is up. Any user id and password log in.
+
+### Step 4 — Run your first task
+
+In a **second terminal**:
 
 ```bash
-export GEMINI_API_KEY=...
-npm run task "log in and look up member 12345, then read the savings balance"
+npm run task "log in and look up member 12345, then read the savings balance" -- \
+  --input operatorUserId=tester \
+  --input operatorPassword=anything
 ```
 
-The first run has nothing to replay, so it discovers: the model explores the app, and the run
-is recorded as a capability under `evidence/`. Ask for the same task again with a different
-member and it replays what it learned — one model call to recognise the request, and none to
-carry it out:
+The first run has nothing to replay, so it discovers: the model explores the app step by step,
+and the run is recorded as a capability under `evidence/`. Expect it to take 30–90 seconds and
+print its reasoning as it goes. Add `--headed` to watch the browser.
+
+When it finishes you will have:
+
+```
+evidence/log-in-and-look-up-member-then-read-the-savings-balance/
+  capability.json          the artifact — read this, it is the deliverable
+  discovery/
+    runlog.json            every observation, action and decision
+    screenshots/           masked frames from the run
+```
+
+### Step 5 — Replay it with different inputs
+
+Ask for the same task with a different member. This is the payoff — one model call to recognise
+the request, and none to carry it out:
 
 ```bash
-npm run task "look up member 67890 and read the savings balance"
+npm run task "look up member 67890 and read the savings balance" -- \
+  --input operatorUserId=tester \
+  --input operatorPassword=anything
 ```
 
-Any user id and password are accepted by the target app's login, so `--input password=anything`
-is fine.
+It should complete in well under a second, and print the extracted savings balance.
 
-### Configuration
+### Step 6 — See the evidence in the console (optional)
+
+```bash
+npm run client              # http://localhost:3000
+```
+
+The console reads `evidence/` directly from disk — no server needed. It shows the capability
+catalog, the discovery trace that produced each artifact, and the replay results.
+
+### Configuration reference
 
 Copy `.env.example` to `.env` and fill in only what you need. A replay needs
 nothing at all; discovery needs one model key.
 
-| Variable | What it does |
-| -------- | ------------ |
-| `GEMINI_API_KEY` | Discovery's default provider. `ANTHROPIC_API_KEY` or a local `OLLAMA_HOST` work instead. |
-| `TARGET_APP_PORT` | Where the target application listens (default `4000`). |
-| `SERVER_PORT` | Where the NestJS server listens (default `4001`). |
+| Variable                | What it does                                                                                                                      |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `GEMINI_API_KEY`        | Discovery's default provider. A local `OLLAMA_HOST` works instead (see [Using Ollama](#using-ollama)).                            |
+| `TARGET_APP_PORT`       | Where the target application listens (default `4000`).                                                                            |
+| `SERVER_PORT`           | Where the NestJS server listens (default `4001`).                                                                                 |
 | `UNDERSTUDY_SERVER_URL` | Set it and the CLI also posts its runs, capabilities, policies and interventions to that server. Unset, everything stays on disk. |
-| `NEXT_PUBLIC_API_URL` | Set it and the console reads from that server. Unset, it reads `evidence/` from disk. |
-| `EVIDENCE_DIR` | Where the console looks for evidence in standalone mode (default `evidence/`). |
-| `DATA_DIR` | Where the server persists what it is sent (default `apps/server/data/`). |
+| `NEXT_PUBLIC_API_URL`   | Set it and the console reads from that server. Unset, it reads `evidence/` from disk.                                             |
+| `EVIDENCE_DIR`          | Where the console looks for evidence in standalone mode (default `evidence/`).                                                    |
+| `DATA_DIR`              | Where the server persists what it is sent (default `apps/server/data/`).                                                          |
 
 ### Server mode
 
@@ -79,10 +136,10 @@ Optional, and the two halves are independent — you can point the CLI at a
 server without pointing the console at it, or the reverse.
 
 ```bash
-npm run dev --workspace @understudy/server     # http://localhost:4001
+npm run server              # http://localhost:4001
 
 UNDERSTUDY_SERVER_URL=http://localhost:4001 npm run replay <artifact> -- --input ...
-NEXT_PUBLIC_API_URL=http://localhost:4001 npm run dev --workspace @understudy/client
+NEXT_PUBLIC_API_URL=http://localhost:4001 npm run client
 ```
 
 The server persists capabilities, runs, policies and interventions to
@@ -158,7 +215,7 @@ entirely by calling `replay` directly.
 ### Flags
 
 ```
---provider  gemini | anthropic | ollama     (default: gemini)
+--provider  gemini | ollama                (default: gemini)
 --model     model id                        (overrides the provider default)
 --url       start url                       (default: http://localhost:4000)
 --input     key=value                       (repeatable; overrides values read from the goal)
@@ -179,14 +236,53 @@ anything passed there wins over a value inferred from the request.
 
 ### Providers
 
-| Provider    | Default model              | Credential                                             |
-| ----------- | -------------------------- | ------------------------------------------------------ |
-| `gemini`    | `gemini-3.6-flash`         | `GEMINI_API_KEY`                                       |
-| `anthropic` | `claude-sonnet-5`          | `ANTHROPIC_API_KEY`                                    |
-| `ollama`    | `llama3.1`                 | none — `OLLAMA_HOST`, default `http://localhost:11434` |
+| Provider | Default model      | Credential                                             |
+| -------- | ------------------ | ------------------------------------------------------ |
+| `gemini` | `gemini-3.6-flash` | `GEMINI_API_KEY`                                       |
+| `ollama` | `llama3.1`         | none — `OLLAMA_HOST`, default `http://localhost:11434` |
 
-All three sit behind one `ModelProvider` interface with a single method, `completeWithTools`.
-Ollama exists so the discovery loop can be exercised without spending anything.
+Both sit behind one `ModelProvider` interface with a single method, `completeWithTools`.
+Adding a new provider means implementing that one method. Ollama exists so the discovery loop
+can be exercised without spending anything — see [Using Ollama](#using-ollama).
+
+### Using Ollama
+
+Ollama lets you run discovery locally with no API key and no cost. Install it, pull a model,
+and pass `--provider ollama`:
+
+```bash
+# 1. Install Ollama (macOS — see https://ollama.com for other platforms)
+brew install ollama
+
+# 2. Start the Ollama server
+ollama serve                    # runs on http://localhost:11434 by default
+
+# 3. Pull a model (in another terminal)
+ollama pull llama3.1            # the default model, ~4.7 GB
+
+# 4. Run a discovery with Ollama
+npm run target-app              # make sure the target app is running
+npm run discover "log in and look up member 12345, then read the savings balance" -- \
+  --provider ollama \
+  --input operatorUserId=tester \
+  --input operatorPassword=anything
+```
+
+To use a different model, pass `--model`:
+
+```bash
+npm run discover "..." -- --provider ollama --model mistral
+```
+
+Set `OLLAMA_HOST` in `.env` if your Ollama server is not at the default address:
+
+```
+OLLAMA_HOST=http://192.168.1.10:11434
+```
+
+**Limitations.** Local models are smaller and less capable than Gemini for tool-use discovery.
+They may take more steps, miss some interactions, or produce weaker business outcome rules.
+The replay side is unaffected — it never calls a model regardless of provider.
 
 ---
 
@@ -368,12 +464,12 @@ The distinction the whole design is built around: **a member number that matches
 correct answer, not a broken run.** Reporting that as a failure is how automation earns a
 reputation for crying wolf, and it's the single most common way this kind of system goes wrong.
 
-| Classification     | Meaning                                                                |
-| ------------------ | ---------------------------------------------------------------------- |
-| `success`          | Every step ran, every checkpoint held, outputs extracted               |
-| `business_outcome` | The application gave a legitimate negative answer — `member_not_found` |
+| Classification     | Meaning                                                                    |
+| ------------------ | -------------------------------------------------------------------------- |
+| `success`          | Every step ran, every checkpoint held, outputs extracted                   |
+| `business_outcome` | The application gave a legitimate negative answer — `member_not_found`     |
 | `recovered`        | The outputs were reached, but not first time — carries a `recoveries` list |
-| `failed`           | A genuine malfunction, with a failure code and the step it died on     |
+| `failed`           | A genuine malfunction, with a failure code and the step it died on         |
 
 Failure codes: `locator_not_found`, `assertion_failed`, `extraction_failed`,
 `type_coercion_failed`, `navigation_failed`, `session_expired`, `unexpected_dialog`,
@@ -474,17 +570,17 @@ labels, a results grid that posts a form instead of linking, and a maintenance b
 Any user id and password log in. Eight member numbers trigger the runtime conditions the brief
 names, which is how the outcome taxonomy gets exercised:
 
-| Member number       | Behaviour                                    | Classification                                |
-| ------------------- | -------------------------------------------- | --------------------------------------------- |
-| `12345`, `67890`, … | Normal member                                | `success`                                      |
-| `99999`             | Search returns no rows                       | `business_outcome` / `member_not_found`        |
-| `88888`             | Three validation errors with codes           | `business_outcome` / `validation_rejected`     |
-| `55555`             | Record exists, operator not authorized       | `business_outcome` / `access_denied`           |
-| `66666`             | Share rows arrive 1.5s after the grid frame  | `recovered` via `retried_read`                 |
-| `22222`             | Dismissible maintenance notice withholds rows| `recovered` via `dismissed_interstitial`       |
-| `33333`             | Fires a `confirm()` nobody declared          | `failed` / `unexpected_dialog` → intervention  |
-| `44444`             | Server returns HTTP 500                      | `failed` / `app_error`                         |
-| `77777`             | Session silently expires, bounced to login   | `failed` / `session_expired` → intervention    |
+| Member number       | Behaviour                                     | Classification                                |
+| ------------------- | --------------------------------------------- | --------------------------------------------- |
+| `12345`, `67890`, … | Normal member                                 | `success`                                     |
+| `99999`             | Search returns no rows                        | `business_outcome` / `member_not_found`       |
+| `88888`             | Three validation errors with codes            | `business_outcome` / `validation_rejected`    |
+| `55555`             | Record exists, operator not authorized        | `business_outcome` / `access_denied`          |
+| `66666`             | Share rows arrive 1.5s after the grid frame   | `recovered` via `retried_read`                |
+| `22222`             | Dismissible maintenance notice withholds rows | `recovered` via `dismissed_interstitial`      |
+| `33333`             | Fires a `confirm()` nobody declared           | `failed` / `unexpected_dialog` → intervention |
+| `44444`             | Server returns HTTP 500                       | `failed` / `app_error`                        |
+| `77777`             | Session silently expires, bounced to login    | `failed` / `session_expired` → intervention   |
 
 The interesting pair is `99999` and `55555`. Both stop on the same step with the same failure
 code, and the shipped artifact separates them only by what the page says — `No records matched`
@@ -494,9 +590,10 @@ comes back to the caller as "no such member".
 
 The right-hand column is what the shipped example artifact reports. A freshly discovered artifact
 is only as good as the rules the shaping step proposed for it — and when this table was run
-against a real Gemini discovery, four of the nine held and five did not. That result, and what it
-says about which half of the system is actually proven, is under
-[Known gaps](#known-gaps) and in REPORT §3.
+against a real Gemini discovery, the happy path (normal member lookup) worked correctly, as did
+the three engine-detected failures. The five edge cases that depend on artifact-declared
+business outcome rules did not hold — see [Known gaps](#known-gaps) and REPORT §3 for the
+breakdown.
 
 ---
 
@@ -511,14 +608,22 @@ packages/
   replay/           Deterministic executor + outcome classifier
   redaction/        Scrubbing at the write boundary
   session/          Takeover state machine, ledger, intervention raiser
-  model-provider/   One interface, three adapters
+  model-provider/   One interface, two adapters (Gemini, Ollama)
 
 apps/
   cli/              discover · replay · task
-  target-app/       The legacy banking app to automate against
-  server/           REST + WebSocket API backing the console
-  client/           The console UI
+  target-app/       The legacy banking app to automate against (Express)
+  server/           REST + WebSocket API backing the console (NestJS)
+  client/           The console UI (Next.js)
 ```
+
+**Why NestJS and Next.js.** The server (`apps/server`) is built with NestJS because the API
+surface — REST endpoints for capabilities, runs, interventions and policy, plus a WebSocket
+gateway for streaming run logs — maps directly to NestJS modules and gateways with minimal
+boilerplate. The console (`apps/client`) is built with Next.js because the capability catalog,
+discovery traces, replay results, and intervention inbox are read-heavy pages that benefit from
+its file-based routing and server-side rendering. Both are optional: the CLI writes everything
+to `evidence/`, and neither the server nor the console is on the path of any core operation.
 
 ### Evidence layout
 
@@ -598,22 +703,27 @@ that makes artifacts trustworthy.
 
 Current limitations, stated plainly so nobody has to discover them the hard way.
 
-**A discovered artifact handles its happy path and little else.** This is measured, not
-estimated. The artifact in `evidence/` was discovered by Gemini against this flow and then
-replayed through all nine member numbers in the table above. It got four right — the success
-path, the unexpected dialog, the app error and the session expiry — and all four of those are
-conditions the *engine* detects by mechanism, with no help from the artifact. Every condition
-that depends on the artifact declaring something was wrong: the model proposed one business
-outcome rule and keyed it on a checkpoint that cannot be reached in the case it names, proposed
-none at all for the validation error or the permission denial, derived a locator from the name
-of the specific member it happened to look up, and guarded an extraction with an assertion that
-passes on an empty cell.
+**The happy path works. The five failures are all edge cases.** This is measured, not estimated.
+The artifact in `evidence/` was discovered by Gemini against this flow and then replayed through
+all nine member numbers in the table above. The core flow — logging in, looking up a member,
+reading the savings balance — works correctly every time it is replayed, including with member
+numbers the discovery run never saw. That is the point: discovery finds the path once, and
+replay follows it deterministically.
 
-None of that is the model being careless, and the containment works — a wrong rule degrades to a
-plain `failed` rather than a confidently wrong answer. But it is the honest state of the
-pipeline: replay is solid, and the recorder that has to feed it is the weak half. REPORT §3
-breaks down the three faults and §7 proposes a fix for each. `scripts/verify.ts` reproduces the
-table against any artifact you point it at.
+The 4-of-9 / 5-of-9 split is about **what detects each edge case**, not about whether the happy
+path works:
+
+| Detected by the engine (4 of 4 correct)                        | Depends on what the artifact declares (0 of 5 correct)                                  |
+| -------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `success`, `unexpected_dialog`, `app_error`, `session_expired` | `member_not_found`, `validation_rejected`, `access_denied`, both recoverable conditions |
+
+The four the engine catches — a dialog listener, an HTTP status, an auth-page heuristic — are
+artifact-independent and held up against cases they had never seen. The five that failed are all
+conditions that require the artifact to have declared the right business outcome rules, and the
+model only saw the happy path during discovery so it could not propose rules for scenarios it
+never encountered. The containment works: a wrong rule degrades to a plain `failed` rather than
+a confidently wrong answer. REPORT §3 breaks down the three distinct faults and §7 proposes a
+fix for each. `scripts/verify.ts` reproduces the table against any artifact you point it at.
 
 **Intent matching doesn't scale as written.** Every capability in the library goes into the
 prompt on every request, so cost and latency grow with the catalogue and precision drops as
