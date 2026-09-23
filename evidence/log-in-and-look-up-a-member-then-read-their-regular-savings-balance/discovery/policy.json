@@ -1,0 +1,58 @@
+{
+  "policyId": "cli-default",
+  "name": "CLI default policy",
+  "allowedOrigins": [
+    "http://localhost:4000"
+  ],
+  "allowedPathPrefixes": [],
+  "rules": [
+    {
+      "actionClass": "read",
+      "decision": "allow"
+    },
+    {
+      "actionClass": "navigate",
+      "decision": "allow"
+    },
+    {
+      "actionClass": "mutate",
+      "decision": "confirm"
+    }
+  ],
+  "redactedFieldNames": [
+    "password",
+    "passcode",
+    "secret",
+    "token",
+    "api key",
+    "ssn",
+    "social security",
+    "card number",
+    "cvv",
+    "security code",
+    "date of birth",
+    "dob"
+  ],
+  "redactedPatterns": [
+    "\\b\\d(?:[ -]?\\d){12,18}\\b",
+    "\\b\\d{3}-\\d{2}-\\d{4}\\b"
+  ],
+  "irreversibleControlLabels": [
+    "post",
+    "transfer",
+    "confirm",
+    "approve",
+    "authorize",
+    "submit payment",
+    "place order",
+    "close account",
+    "delete",
+    "remove",
+    "void",
+    "reverse",
+    "disburse",
+    "issue"
+  ],
+  "maxStepsPerRun": 30,
+  "maxRunSeconds": 600
+}

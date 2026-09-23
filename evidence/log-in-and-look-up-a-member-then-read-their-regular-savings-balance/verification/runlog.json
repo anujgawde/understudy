@@ -1,0 +1,248 @@
+{
+  "runId": "7bda68b1-d220-4ba5-bbf1-ca6e3348ce2d",
+  "mode": "replay",
+  "capabilityId": "log-in-and-look-up-a-member-then-read-their-regular-savings-balance",
+  "inputs": {
+    "memberNumber": "12345",
+    "operatorUserId": "tester",
+    "operatorPassword": "[redacted]"
+  },
+  "startedAt": "2026-09-23T07:08:38.342Z",
+  "completedAt": "2026-09-23T07:08:38.726Z",
+  "entries": [
+    {
+      "entryType": "action",
+      "sequence": 0,
+      "occurredAt": "2026-09-23T07:08:38.379Z",
+      "actor": "system",
+      "action": {
+        "actionType": "navigate",
+        "url": "http://localhost:4000"
+      },
+      "stepId": "navigate-1",
+      "succeeded": true
+    },
+    {
+      "entryType": "assertion",
+      "sequence": 1,
+      "occurredAt": "2026-09-23T07:08:38.387Z",
+      "actor": "system",
+      "checkpointId": "reached-login",
+      "passed": true
+    },
+    {
+      "entryType": "action",
+      "sequence": 2,
+      "occurredAt": "2026-09-23T07:08:38.438Z",
+      "actor": "system",
+      "action": {
+        "actionType": "fill",
+        "target": [
+          {
+            "strategy": "adjacent",
+            "labelText": "User ID:",
+            "direction": "next",
+            "targetRole": "textbox"
+          },
+          {
+            "strategy": "css",
+            "selector": "#ctl00_ContentMain_txtUserID"
+          },
+          {
+            "strategy": "role",
+            "role": "textbox",
+            "matchIndex": 0
+          }
+        ],
+        "value": "tester"
+      },
+      "stepId": "fill-userId",
+      "resolvedByIndex": 0,
+      "succeeded": true
+    },
+    {
+      "entryType": "action",
+      "sequence": 3,
+      "occurredAt": "2026-09-23T07:08:38.476Z",
+      "actor": "system",
+      "action": {
+        "actionType": "fill",
+        "target": [
+          {
+            "strategy": "adjacent",
+            "labelText": "Password:",
+            "direction": "next",
+            "targetRole": "textbox"
+          },
+          {
+            "strategy": "css",
+            "selector": "#ctl00_ContentMain_txtPassword"
+          },
+          {
+            "strategy": "role",
+            "role": "textbox",
+            "matchIndex": 1
+          }
+        ],
+        "value": "[redacted]"
+      },
+      "stepId": "fill-password",
+      "resolvedByIndex": 0,
+      "succeeded": true
+    },
+    {
+      "entryType": "action",
+      "sequence": 4,
+      "occurredAt": "2026-09-23T07:08:38.530Z",
+      "actor": "system",
+      "action": {
+        "actionType": "click",
+        "target": [
+          {
+            "strategy": "role",
+            "role": "button",
+            "accessibleName": "Sign In"
+          },
+          {
+            "strategy": "text",
+            "text": "Sign In",
+            "matchExactly": true
+          },
+          {
+            "strategy": "css",
+            "selector": "#ctl00_ContentMain_btnLogin"
+          }
+        ]
+      },
+      "stepId": "click-signIn",
+      "resolvedByIndex": 0,
+      "succeeded": true
+    },
+    {
+      "entryType": "assertion",
+      "sequence": 5,
+      "occurredAt": "2026-09-23T07:08:38.560Z",
+      "actor": "system",
+      "checkpointId": "reached-membersSearch",
+      "passed": true
+    },
+    {
+      "entryType": "action",
+      "sequence": 6,
+      "occurredAt": "2026-09-23T07:08:38.569Z",
+      "actor": "system",
+      "action": {
+        "actionType": "fill",
+        "target": [
+          {
+            "strategy": "adjacent",
+            "labelText": "Member No:",
+            "direction": "next",
+            "targetRole": "textbox"
+          },
+          {
+            "strategy": "css",
+            "selector": "#ctl00_ContentMain_txtMbrNo"
+          },
+          {
+            "strategy": "role",
+            "role": "textbox",
+            "matchIndex": 0
+          }
+        ],
+        "value": "12345"
+      },
+      "stepId": "fill-memberNo",
+      "resolvedByIndex": 0,
+      "succeeded": true
+    },
+    {
+      "entryType": "action",
+      "sequence": 7,
+      "occurredAt": "2026-09-23T07:08:38.621Z",
+      "actor": "system",
+      "action": {
+        "actionType": "click",
+        "target": [
+          {
+            "strategy": "role",
+            "role": "button",
+            "accessibleName": "Search"
+          },
+          {
+            "strategy": "text",
+            "text": "Search",
+            "matchExactly": true
+          },
+          {
+            "strategy": "css",
+            "selector": "#ctl00_ContentMain_btnSearch"
+          }
+        ]
+      },
+      "stepId": "click-search",
+      "resolvedByIndex": 0,
+      "succeeded": true
+    },
+    {
+      "entryType": "action",
+      "sequence": 8,
+      "occurredAt": "2026-09-23T07:08:38.700Z",
+      "actor": "system",
+      "action": {
+        "actionType": "click",
+        "target": [
+          {
+            "strategy": "role",
+            "role": "link",
+            "accessibleName": "JOHNSON, MARGARET A"
+          },
+          {
+            "strategy": "text",
+            "text": "JOHNSON, MARGARET A",
+            "matchExactly": true
+          },
+          {
+            "strategy": "role",
+            "role": "link",
+            "matchIndex": 8
+          }
+        ]
+      },
+      "stepId": "click-johnsonMargaretA",
+      "resolvedByIndex": 0,
+      "succeeded": true
+    },
+    {
+      "entryType": "assertion",
+      "sequence": 9,
+      "occurredAt": "2026-09-23T07:08:38.710Z",
+      "actor": "system",
+      "checkpointId": "reached-membersDetail",
+      "passed": true
+    },
+    {
+      "entryType": "assertion",
+      "sequence": 10,
+      "occurredAt": "2026-09-23T07:08:38.721Z",
+      "actor": "system",
+      "checkpointId": "results-present",
+      "passed": true
+    },
+    {
+      "entryType": "extraction",
+      "sequence": 11,
+      "occurredAt": "2026-09-23T07:08:38.726Z",
+      "actor": "system",
+      "outputName": "currentBalance",
+      "rawValue": "$4,182.90",
+      "coerced": true
+    }
+  ],
+  "outcome": {
+    "classification": "success",
+    "outputs": {
+      "currentBalance": 4182.9
+    }
+  }
+}

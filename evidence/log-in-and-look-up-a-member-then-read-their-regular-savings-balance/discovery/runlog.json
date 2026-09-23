@@ -1,0 +1,3111 @@
+{
+  "runId": "d1e6ca8a-142f-4bea-9af7-e4c258f4faf2",
+  "mode": "discovery",
+  "goal": "log in and look up a member, then read their regular savings balance",
+  "inputs": {
+    "memberNumber": "12345",
+    "operatorUserId": "tester",
+    "operatorPassword": "[redacted]"
+  },
+  "startedAt": "2026-09-23T06:59:21.130Z",
+  "completedAt": "2026-09-23T07:08:24.636Z",
+  "entries": [
+    {
+      "entryType": "observation",
+      "sequence": 0,
+      "occurredAt": "2026-09-23T06:59:21.149Z",
+      "actor": "system",
+      "observation": {
+        "url": "about:blank",
+        "pageTitle": "",
+        "elements": [],
+        "capturedAt": "2026-09-23T06:59:21.149Z"
+      }
+    },
+    {
+      "entryType": "action",
+      "sequence": 1,
+      "occurredAt": "2026-09-23T06:59:21.202Z",
+      "actor": "system",
+      "action": {
+        "actionType": "navigate",
+        "url": "http://localhost:4000"
+      },
+      "succeeded": true
+    },
+    {
+      "entryType": "observation",
+      "sequence": 2,
+      "occurredAt": "2026-09-23T06:59:21.313Z",
+      "actor": "system",
+      "observation": {
+        "url": "http://localhost:4000/login",
+        "pageTitle": "Meridian Core - Sign In",
+        "elements": [
+          {
+            "elementRef": "element-0",
+            "role": "form",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "form"
+          },
+          {
+            "elementRef": "element-1",
+            "role": "table",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "table",
+            "nearbyText": [
+              "Password:",
+              "Branch:\n              \n                \n                  MAIN\n                  WEST\n                  EAST\n                  NORTH"
+            ]
+          },
+          {
+            "elementRef": "element-2",
+            "role": "cell",
+            "accessibleName": "User ID:",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td"
+          },
+          {
+            "elementRef": "element-3",
+            "role": "cell",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "User ID:"
+            ]
+          },
+          {
+            "elementRef": "element-4",
+            "role": "textbox",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "input",
+            "domId": "ctl00_ContentMain_txtUserID",
+            "nearbyText": [
+              "User ID:"
+            ]
+          },
+          {
+            "elementRef": "element-5",
+            "role": "table",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "table",
+            "nearbyText": [
+              "User ID:",
+              "Branch:\n              \n                \n                  MAIN\n                  WEST\n                  EAST\n                  NORTH"
+            ]
+          },
+          {
+            "elementRef": "element-6",
+            "role": "cell",
+            "accessibleName": "Password:",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td"
+          },
+          {
+            "elementRef": "element-7",
+            "role": "cell",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Password:"
+            ]
+          },
+          {
+            "elementRef": "element-8",
+            "role": "textbox",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "input",
+            "domId": "ctl00_ContentMain_txtPassword",
+            "nearbyText": [
+              "Password:"
+            ]
+          },
+          {
+            "elementRef": "element-9",
+            "role": "table",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "table",
+            "nearbyText": [
+              "User ID:",
+              "Password:"
+            ]
+          },
+          {
+            "elementRef": "element-10",
+            "role": "cell",
+            "accessibleName": "Branch:",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "MAIN\n                  WEST\n                  EAST\n                  NORTH"
+            ]
+          },
+          {
+            "elementRef": "element-11",
+            "role": "cell",
+            "accessibleName": "MAIN\n                  WEST\n                  EAST\n                  NORTH",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Branch:"
+            ]
+          },
+          {
+            "elementRef": "element-12",
+            "role": "combobox",
+            "currentValue": "MAIN",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "select",
+            "domId": "ctl00_ContentMain_ddlBranch",
+            "nearbyText": [
+              "Branch:"
+            ]
+          },
+          {
+            "elementRef": "element-13",
+            "role": "option",
+            "accessibleName": "MAIN",
+            "isEnabled": true,
+            "isVisible": false,
+            "tagName": "option",
+            "nearbyText": [
+              "Branch:"
+            ]
+          },
+          {
+            "elementRef": "element-14",
+            "role": "option",
+            "accessibleName": "WEST",
+            "isEnabled": true,
+            "isVisible": false,
+            "tagName": "option",
+            "nearbyText": [
+              "Branch:"
+            ]
+          },
+          {
+            "elementRef": "element-15",
+            "role": "option",
+            "accessibleName": "EAST",
+            "isEnabled": true,
+            "isVisible": false,
+            "tagName": "option",
+            "nearbyText": [
+              "Branch:"
+            ]
+          },
+          {
+            "elementRef": "element-16",
+            "role": "option",
+            "accessibleName": "NORTH",
+            "isEnabled": true,
+            "isVisible": false,
+            "tagName": "option",
+            "nearbyText": [
+              "Branch:"
+            ]
+          },
+          {
+            "elementRef": "element-17",
+            "role": "button",
+            "accessibleName": "Sign In",
+            "currentValue": "Sign In",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "input",
+            "domId": "ctl00_ContentMain_btnLogin"
+          },
+          {
+            "elementRef": "element-18",
+            "role": "button",
+            "accessibleName": "Clear",
+            "currentValue": "Clear",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "input"
+          }
+        ],
+        "screenshotPath": "evidence/log-in-and-look-up-a-member-then-read-their-regular-savings-balance/discovery/screenshots/observe-000.png",
+        "capturedAt": "2026-09-23T06:59:21.313Z"
+      }
+    },
+    {
+      "entryType": "rationale",
+      "sequence": 3,
+      "occurredAt": "2026-09-23T06:59:27.173Z",
+      "actor": "model",
+      "text": "I will fill in the User ID field with the supplied `{{operatorUserId}}` input."
+    },
+    {
+      "entryType": "policy_decision",
+      "sequence": 4,
+      "occurredAt": "2026-09-23T06:59:27.173Z",
+      "actor": "system",
+      "actionClass": "mutate",
+      "decision": "confirm",
+      "reason": "Policy rule: mutate actions are confirmed"
+    },
+    {
+      "entryType": "action",
+      "sequence": 5,
+      "occurredAt": "2026-09-23T07:06:10.509Z",
+      "actor": "model",
+      "action": {
+        "actionType": "fill",
+        "target": [
+          {
+            "strategy": "css",
+            "selector": "[data-understudy-ref=\"element-4\"]"
+          }
+        ],
+        "value": "{{operatorUserId}}"
+      },
+      "succeeded": true
+    },
+    {
+      "entryType": "observation",
+      "sequence": 6,
+      "occurredAt": "2026-09-23T07:06:10.560Z",
+      "actor": "system",
+      "observation": {
+        "url": "http://localhost:4000/login",
+        "pageTitle": "Meridian Core - Sign In",
+        "elements": [
+          {
+            "elementRef": "element-0",
+            "role": "form",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "form"
+          },
+          {
+            "elementRef": "element-1",
+            "role": "table",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "table",
+            "nearbyText": [
+              "Password:",
+              "Branch:\n              \n                \n                  MAIN\n                  WEST\n                  EAST\n                  NORTH"
+            ]
+          },
+          {
+            "elementRef": "element-2",
+            "role": "cell",
+            "accessibleName": "User ID:",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td"
+          },
+          {
+            "elementRef": "element-3",
+            "role": "cell",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "User ID:"
+            ]
+          },
+          {
+            "elementRef": "element-4",
+            "role": "textbox",
+            "currentValue": "tester",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "input",
+            "domId": "ctl00_ContentMain_txtUserID",
+            "nearbyText": [
+              "User ID:"
+            ]
+          },
+          {
+            "elementRef": "element-5",
+            "role": "table",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "table",
+            "nearbyText": [
+              "User ID:",
+              "Branch:\n              \n                \n                  MAIN\n                  WEST\n                  EAST\n                  NORTH"
+            ]
+          },
+          {
+            "elementRef": "element-6",
+            "role": "cell",
+            "accessibleName": "Password:",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td"
+          },
+          {
+            "elementRef": "element-7",
+            "role": "cell",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Password:"
+            ]
+          },
+          {
+            "elementRef": "element-8",
+            "role": "textbox",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "input",
+            "domId": "ctl00_ContentMain_txtPassword",
+            "nearbyText": [
+              "Password:"
+            ]
+          },
+          {
+            "elementRef": "element-9",
+            "role": "table",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "table",
+            "nearbyText": [
+              "User ID:",
+              "Password:"
+            ]
+          },
+          {
+            "elementRef": "element-10",
+            "role": "cell",
+            "accessibleName": "Branch:",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "MAIN\n                  WEST\n                  EAST\n                  NORTH"
+            ]
+          },
+          {
+            "elementRef": "element-11",
+            "role": "cell",
+            "accessibleName": "MAIN\n                  WEST\n                  EAST\n                  NORTH",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Branch:"
+            ]
+          },
+          {
+            "elementRef": "element-12",
+            "role": "combobox",
+            "currentValue": "MAIN",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "select",
+            "domId": "ctl00_ContentMain_ddlBranch",
+            "nearbyText": [
+              "Branch:"
+            ]
+          },
+          {
+            "elementRef": "element-13",
+            "role": "option",
+            "accessibleName": "MAIN",
+            "isEnabled": true,
+            "isVisible": false,
+            "tagName": "option",
+            "nearbyText": [
+              "Branch:"
+            ]
+          },
+          {
+            "elementRef": "element-14",
+            "role": "option",
+            "accessibleName": "WEST",
+            "isEnabled": true,
+            "isVisible": false,
+            "tagName": "option",
+            "nearbyText": [
+              "Branch:"
+            ]
+          },
+          {
+            "elementRef": "element-15",
+            "role": "option",
+            "accessibleName": "EAST",
+            "isEnabled": true,
+            "isVisible": false,
+            "tagName": "option",
+            "nearbyText": [
+              "Branch:"
+            ]
+          },
+          {
+            "elementRef": "element-16",
+            "role": "option",
+            "accessibleName": "NORTH",
+            "isEnabled": true,
+            "isVisible": false,
+            "tagName": "option",
+            "nearbyText": [
+              "Branch:"
+            ]
+          },
+          {
+            "elementRef": "element-17",
+            "role": "button",
+            "accessibleName": "Sign In",
+            "currentValue": "Sign In",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "input",
+            "domId": "ctl00_ContentMain_btnLogin"
+          },
+          {
+            "elementRef": "element-18",
+            "role": "button",
+            "accessibleName": "Clear",
+            "currentValue": "Clear",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "input"
+          }
+        ],
+        "screenshotPath": "evidence/log-in-and-look-up-a-member-then-read-their-regular-savings-balance/discovery/screenshots/observe-001.png",
+        "capturedAt": "2026-09-23T07:06:10.560Z"
+      }
+    },
+    {
+      "entryType": "rationale",
+      "sequence": 7,
+      "occurredAt": "2026-09-23T07:06:30.854Z",
+      "actor": "model",
+      "text": "I will fill in the Password field with the supplied `[redacted]` input."
+    },
+    {
+      "entryType": "policy_decision",
+      "sequence": 8,
+      "occurredAt": "2026-09-23T07:06:30.854Z",
+      "actor": "system",
+      "actionClass": "mutate",
+      "decision": "confirm",
+      "reason": "Policy rule: mutate actions are confirmed"
+    },
+    {
+      "entryType": "action",
+      "sequence": 9,
+      "occurredAt": "2026-09-23T07:06:38.119Z",
+      "actor": "model",
+      "action": {
+        "actionType": "fill",
+        "target": [
+          {
+            "strategy": "css",
+            "selector": "[data-understudy-ref=\"element-8\"]"
+          }
+        ],
+        "value": "[redacted]"
+      },
+      "succeeded": true
+    },
+    {
+      "entryType": "observation",
+      "sequence": 10,
+      "occurredAt": "2026-09-23T07:06:38.166Z",
+      "actor": "system",
+      "observation": {
+        "url": "http://localhost:4000/login",
+        "pageTitle": "Meridian Core - Sign In",
+        "elements": [
+          {
+            "elementRef": "element-0",
+            "role": "form",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "form"
+          },
+          {
+            "elementRef": "element-1",
+            "role": "table",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "table",
+            "nearbyText": [
+              "Password:",
+              "Branch:\n              \n                \n                  MAIN\n                  WEST\n                  EAST\n                  NORTH"
+            ]
+          },
+          {
+            "elementRef": "element-2",
+            "role": "cell",
+            "accessibleName": "User ID:",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td"
+          },
+          {
+            "elementRef": "element-3",
+            "role": "cell",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "User ID:"
+            ]
+          },
+          {
+            "elementRef": "element-4",
+            "role": "textbox",
+            "currentValue": "tester",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "input",
+            "domId": "ctl00_ContentMain_txtUserID",
+            "nearbyText": [
+              "User ID:"
+            ]
+          },
+          {
+            "elementRef": "element-5",
+            "role": "table",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "table",
+            "nearbyText": [
+              "User ID:",
+              "Branch:\n              \n                \n                  MAIN\n                  WEST\n                  EAST\n                  NORTH"
+            ]
+          },
+          {
+            "elementRef": "element-6",
+            "role": "cell",
+            "accessibleName": "Password:",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td"
+          },
+          {
+            "elementRef": "element-7",
+            "role": "cell",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Password:"
+            ]
+          },
+          {
+            "elementRef": "element-8",
+            "role": "textbox",
+            "currentValue": "[redacted]",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "input",
+            "domId": "ctl00_ContentMain_txtPassword",
+            "nearbyText": [
+              "Password:"
+            ]
+          },
+          {
+            "elementRef": "element-9",
+            "role": "table",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "table",
+            "nearbyText": [
+              "User ID:",
+              "Password:"
+            ]
+          },
+          {
+            "elementRef": "element-10",
+            "role": "cell",
+            "accessibleName": "Branch:",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "MAIN\n                  WEST\n                  EAST\n                  NORTH"
+            ]
+          },
+          {
+            "elementRef": "element-11",
+            "role": "cell",
+            "accessibleName": "MAIN\n                  WEST\n                  EAST\n                  NORTH",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Branch:"
+            ]
+          },
+          {
+            "elementRef": "element-12",
+            "role": "combobox",
+            "currentValue": "MAIN",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "select",
+            "domId": "ctl00_ContentMain_ddlBranch",
+            "nearbyText": [
+              "Branch:"
+            ]
+          },
+          {
+            "elementRef": "element-13",
+            "role": "option",
+            "accessibleName": "MAIN",
+            "isEnabled": true,
+            "isVisible": false,
+            "tagName": "option",
+            "nearbyText": [
+              "Branch:"
+            ]
+          },
+          {
+            "elementRef": "element-14",
+            "role": "option",
+            "accessibleName": "WEST",
+            "isEnabled": true,
+            "isVisible": false,
+            "tagName": "option",
+            "nearbyText": [
+              "Branch:"
+            ]
+          },
+          {
+            "elementRef": "element-15",
+            "role": "option",
+            "accessibleName": "EAST",
+            "isEnabled": true,
+            "isVisible": false,
+            "tagName": "option",
+            "nearbyText": [
+              "Branch:"
+            ]
+          },
+          {
+            "elementRef": "element-16",
+            "role": "option",
+            "accessibleName": "NORTH",
+            "isEnabled": true,
+            "isVisible": false,
+            "tagName": "option",
+            "nearbyText": [
+              "Branch:"
+            ]
+          },
+          {
+            "elementRef": "element-17",
+            "role": "button",
+            "accessibleName": "Sign In",
+            "currentValue": "Sign In",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "input",
+            "domId": "ctl00_ContentMain_btnLogin"
+          },
+          {
+            "elementRef": "element-18",
+            "role": "button",
+            "accessibleName": "Clear",
+            "currentValue": "Clear",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "input"
+          }
+        ],
+        "screenshotPath": "evidence/log-in-and-look-up-a-member-then-read-their-regular-savings-balance/discovery/screenshots/observe-002.png",
+        "capturedAt": "2026-09-23T07:06:38.166Z"
+      }
+    },
+    {
+      "entryType": "rationale",
+      "sequence": 11,
+      "occurredAt": "2026-09-23T07:06:54.315Z",
+      "actor": "model",
+      "text": "I will click the \"Sign In\" button to submit the login credentials."
+    },
+    {
+      "entryType": "policy_decision",
+      "sequence": 12,
+      "occurredAt": "2026-09-23T07:06:54.315Z",
+      "actor": "system",
+      "actionClass": "read",
+      "decision": "allow",
+      "reason": "Policy rule: read actions are allowed"
+    },
+    {
+      "entryType": "action",
+      "sequence": 13,
+      "occurredAt": "2026-09-23T07:06:54.376Z",
+      "actor": "model",
+      "action": {
+        "actionType": "click",
+        "target": [
+          {
+            "strategy": "css",
+            "selector": "[data-understudy-ref=\"element-17\"]"
+          }
+        ]
+      },
+      "succeeded": true
+    },
+    {
+      "entryType": "observation",
+      "sequence": 14,
+      "occurredAt": "2026-09-23T07:06:54.430Z",
+      "actor": "system",
+      "observation": {
+        "url": "http://localhost:4000/members/search",
+        "pageTitle": "Meridian Core - Member Search",
+        "elements": [
+          {
+            "elementRef": "element-0",
+            "role": "link",
+            "accessibleName": "Sign Out",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "a",
+            "nearbyText": [
+              "Signed in: tester |"
+            ]
+          },
+          {
+            "elementRef": "element-1",
+            "role": "link",
+            "accessibleName": "Member Search",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "a",
+            "nearbyText": [
+              "MEMBER SERVICES",
+              "Member Detail",
+              "Open Sub-Account",
+              "REPORTS",
+              "Daily Activity"
+            ]
+          },
+          {
+            "elementRef": "element-2",
+            "role": "link",
+            "accessibleName": "Member Detail",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "a",
+            "nearbyText": [
+              "MEMBER SERVICES",
+              "Member Search",
+              "Open Sub-Account",
+              "REPORTS",
+              "Daily Activity"
+            ]
+          },
+          {
+            "elementRef": "element-3",
+            "role": "link",
+            "accessibleName": "Open Sub-Account",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "a",
+            "nearbyText": [
+              "MEMBER SERVICES",
+              "Member Search",
+              "Member Detail",
+              "REPORTS",
+              "Daily Activity"
+            ]
+          },
+          {
+            "elementRef": "element-4",
+            "role": "link",
+            "accessibleName": "Daily Activity",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "a",
+            "nearbyText": [
+              "MEMBER SERVICES",
+              "Member Search",
+              "Member Detail",
+              "Open Sub-Account",
+              "REPORTS"
+            ]
+          },
+          {
+            "elementRef": "element-5",
+            "role": "link",
+            "accessibleName": "Audit Trail",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "a",
+            "nearbyText": [
+              "MEMBER SERVICES",
+              "Member Search",
+              "Member Detail",
+              "Open Sub-Account",
+              "REPORTS"
+            ]
+          },
+          {
+            "elementRef": "element-6",
+            "role": "link",
+            "accessibleName": "User Management",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "a",
+            "nearbyText": [
+              "MEMBER SERVICES",
+              "Member Search",
+              "Member Detail",
+              "Open Sub-Account",
+              "REPORTS"
+            ]
+          },
+          {
+            "elementRef": "element-7",
+            "role": "link",
+            "accessibleName": "Branch Config",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "a",
+            "nearbyText": [
+              "MEMBER SERVICES",
+              "Member Search",
+              "Member Detail",
+              "Open Sub-Account",
+              "REPORTS"
+            ]
+          },
+          {
+            "elementRef": "element-8",
+            "role": "form",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "form",
+            "domId": "ctl00_ContentMain_frmSearch"
+          },
+          {
+            "elementRef": "element-9",
+            "role": "table",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "table"
+          },
+          {
+            "elementRef": "element-10",
+            "role": "cell",
+            "accessibleName": "Member No:",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Branch:",
+              "ALLMAINWESTEASTNORTH",
+              "Include Closed"
+            ]
+          },
+          {
+            "elementRef": "element-11",
+            "role": "cell",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Member No:",
+              "Branch:",
+              "ALLMAINWESTEASTNORTH",
+              "Include Closed"
+            ]
+          },
+          {
+            "elementRef": "element-12",
+            "role": "textbox",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "input",
+            "domId": "ctl00_ContentMain_txtMbrNo",
+            "nearbyText": [
+              "Member No:",
+              "Branch:",
+              "ALLMAINWESTEASTNORTH",
+              "Include Closed"
+            ]
+          },
+          {
+            "elementRef": "element-13",
+            "role": "cell",
+            "accessibleName": "Branch:",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Member No:",
+              "ALLMAINWESTEASTNORTH",
+              "Include Closed"
+            ]
+          },
+          {
+            "elementRef": "element-14",
+            "role": "cell",
+            "accessibleName": "ALLMAINWESTEASTNORTH",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Member No:",
+              "Branch:",
+              "Include Closed"
+            ]
+          },
+          {
+            "elementRef": "element-15",
+            "role": "combobox",
+            "currentValue": "ALL",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "select",
+            "domId": "ctl00_ContentMain_ddlBranch",
+            "nearbyText": [
+              "Member No:",
+              "Branch:",
+              "Include Closed"
+            ]
+          },
+          {
+            "elementRef": "element-16",
+            "role": "option",
+            "accessibleName": "ALL",
+            "isEnabled": true,
+            "isVisible": false,
+            "tagName": "option",
+            "nearbyText": [
+              "Member No:",
+              "Branch:",
+              "Include Closed"
+            ]
+          },
+          {
+            "elementRef": "element-17",
+            "role": "option",
+            "accessibleName": "MAIN",
+            "isEnabled": true,
+            "isVisible": false,
+            "tagName": "option",
+            "nearbyText": [
+              "Member No:",
+              "Branch:",
+              "Include Closed"
+            ]
+          },
+          {
+            "elementRef": "element-18",
+            "role": "option",
+            "accessibleName": "WEST",
+            "isEnabled": true,
+            "isVisible": false,
+            "tagName": "option",
+            "nearbyText": [
+              "Member No:",
+              "Branch:",
+              "Include Closed"
+            ]
+          },
+          {
+            "elementRef": "element-19",
+            "role": "option",
+            "accessibleName": "EAST",
+            "isEnabled": true,
+            "isVisible": false,
+            "tagName": "option",
+            "nearbyText": [
+              "Member No:",
+              "Branch:",
+              "Include Closed"
+            ]
+          },
+          {
+            "elementRef": "element-20",
+            "role": "option",
+            "accessibleName": "NORTH",
+            "isEnabled": true,
+            "isVisible": false,
+            "tagName": "option",
+            "nearbyText": [
+              "Member No:",
+              "Branch:",
+              "Include Closed"
+            ]
+          },
+          {
+            "elementRef": "element-21",
+            "role": "cell",
+            "accessibleName": "Include Closed",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Member No:",
+              "Branch:",
+              "ALLMAINWESTEASTNORTH"
+            ]
+          },
+          {
+            "elementRef": "element-22",
+            "role": "checkbox",
+            "accessibleName": "Include Closed",
+            "currentValue": "false",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "input",
+            "domId": "ctl00_ContentMain_chkIncludeClosed",
+            "nearbyText": [
+              "Member No:",
+              "Branch:",
+              "ALLMAINWESTEASTNORTH"
+            ]
+          },
+          {
+            "elementRef": "element-23",
+            "role": "button",
+            "accessibleName": "Search",
+            "currentValue": "Search",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "input",
+            "domId": "ctl00_ContentMain_btnSearch"
+          },
+          {
+            "elementRef": "element-24",
+            "role": "button",
+            "accessibleName": "Clear",
+            "currentValue": "Clear",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "input",
+            "domId": "ctl00_ContentMain_btnClear"
+          },
+          {
+            "elementRef": "element-25",
+            "role": "button",
+            "accessibleName": "Advanced Query",
+            "currentValue": "Advanced Query",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "input",
+            "domId": "ctl00_ContentMain_btnAdvanced"
+          }
+        ],
+        "screenshotPath": "evidence/log-in-and-look-up-a-member-then-read-their-regular-savings-balance/discovery/screenshots/observe-003.png",
+        "capturedAt": "2026-09-23T07:06:54.430Z"
+      }
+    },
+    {
+      "entryType": "rationale",
+      "sequence": 15,
+      "occurredAt": "2026-09-23T07:06:56.291Z",
+      "actor": "model",
+      "text": "I will enter the member number into the Member No text field."
+    },
+    {
+      "entryType": "policy_decision",
+      "sequence": 16,
+      "occurredAt": "2026-09-23T07:06:56.291Z",
+      "actor": "system",
+      "actionClass": "mutate",
+      "decision": "confirm",
+      "reason": "Policy rule: mutate actions are confirmed"
+    },
+    {
+      "entryType": "action",
+      "sequence": 17,
+      "occurredAt": "2026-09-23T07:07:02.071Z",
+      "actor": "model",
+      "action": {
+        "actionType": "fill",
+        "target": [
+          {
+            "strategy": "css",
+            "selector": "[data-understudy-ref=\"element-12\"]"
+          }
+        ],
+        "value": "{{memberNumber}}"
+      },
+      "succeeded": true
+    },
+    {
+      "entryType": "observation",
+      "sequence": 18,
+      "occurredAt": "2026-09-23T07:07:02.112Z",
+      "actor": "system",
+      "observation": {
+        "url": "http://localhost:4000/members/search",
+        "pageTitle": "Meridian Core - Member Search",
+        "elements": [
+          {
+            "elementRef": "element-0",
+            "role": "link",
+            "accessibleName": "Sign Out",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "a",
+            "nearbyText": [
+              "Signed in: tester |"
+            ]
+          },
+          {
+            "elementRef": "element-1",
+            "role": "link",
+            "accessibleName": "Member Search",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "a",
+            "nearbyText": [
+              "MEMBER SERVICES",
+              "Member Detail",
+              "Open Sub-Account",
+              "REPORTS",
+              "Daily Activity"
+            ]
+          },
+          {
+            "elementRef": "element-2",
+            "role": "link",
+            "accessibleName": "Member Detail",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "a",
+            "nearbyText": [
+              "MEMBER SERVICES",
+              "Member Search",
+              "Open Sub-Account",
+              "REPORTS",
+              "Daily Activity"
+            ]
+          },
+          {
+            "elementRef": "element-3",
+            "role": "link",
+            "accessibleName": "Open Sub-Account",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "a",
+            "nearbyText": [
+              "MEMBER SERVICES",
+              "Member Search",
+              "Member Detail",
+              "REPORTS",
+              "Daily Activity"
+            ]
+          },
+          {
+            "elementRef": "element-4",
+            "role": "link",
+            "accessibleName": "Daily Activity",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "a",
+            "nearbyText": [
+              "MEMBER SERVICES",
+              "Member Search",
+              "Member Detail",
+              "Open Sub-Account",
+              "REPORTS"
+            ]
+          },
+          {
+            "elementRef": "element-5",
+            "role": "link",
+            "accessibleName": "Audit Trail",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "a",
+            "nearbyText": [
+              "MEMBER SERVICES",
+              "Member Search",
+              "Member Detail",
+              "Open Sub-Account",
+              "REPORTS"
+            ]
+          },
+          {
+            "elementRef": "element-6",
+            "role": "link",
+            "accessibleName": "User Management",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "a",
+            "nearbyText": [
+              "MEMBER SERVICES",
+              "Member Search",
+              "Member Detail",
+              "Open Sub-Account",
+              "REPORTS"
+            ]
+          },
+          {
+            "elementRef": "element-7",
+            "role": "link",
+            "accessibleName": "Branch Config",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "a",
+            "nearbyText": [
+              "MEMBER SERVICES",
+              "Member Search",
+              "Member Detail",
+              "Open Sub-Account",
+              "REPORTS"
+            ]
+          },
+          {
+            "elementRef": "element-8",
+            "role": "form",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "form",
+            "domId": "ctl00_ContentMain_frmSearch"
+          },
+          {
+            "elementRef": "element-9",
+            "role": "table",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "table"
+          },
+          {
+            "elementRef": "element-10",
+            "role": "cell",
+            "accessibleName": "Member No:",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Branch:",
+              "ALLMAINWESTEASTNORTH",
+              "Include Closed"
+            ]
+          },
+          {
+            "elementRef": "element-11",
+            "role": "cell",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Member No:",
+              "Branch:",
+              "ALLMAINWESTEASTNORTH",
+              "Include Closed"
+            ]
+          },
+          {
+            "elementRef": "element-12",
+            "role": "textbox",
+            "currentValue": "12345",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "input",
+            "domId": "ctl00_ContentMain_txtMbrNo",
+            "nearbyText": [
+              "Member No:",
+              "Branch:",
+              "ALLMAINWESTEASTNORTH",
+              "Include Closed"
+            ]
+          },
+          {
+            "elementRef": "element-13",
+            "role": "cell",
+            "accessibleName": "Branch:",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Member No:",
+              "ALLMAINWESTEASTNORTH",
+              "Include Closed"
+            ]
+          },
+          {
+            "elementRef": "element-14",
+            "role": "cell",
+            "accessibleName": "ALLMAINWESTEASTNORTH",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Member No:",
+              "Branch:",
+              "Include Closed"
+            ]
+          },
+          {
+            "elementRef": "element-15",
+            "role": "combobox",
+            "currentValue": "ALL",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "select",
+            "domId": "ctl00_ContentMain_ddlBranch",
+            "nearbyText": [
+              "Member No:",
+              "Branch:",
+              "Include Closed"
+            ]
+          },
+          {
+            "elementRef": "element-16",
+            "role": "option",
+            "accessibleName": "ALL",
+            "isEnabled": true,
+            "isVisible": false,
+            "tagName": "option",
+            "nearbyText": [
+              "Member No:",
+              "Branch:",
+              "Include Closed"
+            ]
+          },
+          {
+            "elementRef": "element-17",
+            "role": "option",
+            "accessibleName": "MAIN",
+            "isEnabled": true,
+            "isVisible": false,
+            "tagName": "option",
+            "nearbyText": [
+              "Member No:",
+              "Branch:",
+              "Include Closed"
+            ]
+          },
+          {
+            "elementRef": "element-18",
+            "role": "option",
+            "accessibleName": "WEST",
+            "isEnabled": true,
+            "isVisible": false,
+            "tagName": "option",
+            "nearbyText": [
+              "Member No:",
+              "Branch:",
+              "Include Closed"
+            ]
+          },
+          {
+            "elementRef": "element-19",
+            "role": "option",
+            "accessibleName": "EAST",
+            "isEnabled": true,
+            "isVisible": false,
+            "tagName": "option",
+            "nearbyText": [
+              "Member No:",
+              "Branch:",
+              "Include Closed"
+            ]
+          },
+          {
+            "elementRef": "element-20",
+            "role": "option",
+            "accessibleName": "NORTH",
+            "isEnabled": true,
+            "isVisible": false,
+            "tagName": "option",
+            "nearbyText": [
+              "Member No:",
+              "Branch:",
+              "Include Closed"
+            ]
+          },
+          {
+            "elementRef": "element-21",
+            "role": "cell",
+            "accessibleName": "Include Closed",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Member No:",
+              "Branch:",
+              "ALLMAINWESTEASTNORTH"
+            ]
+          },
+          {
+            "elementRef": "element-22",
+            "role": "checkbox",
+            "accessibleName": "Include Closed",
+            "currentValue": "false",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "input",
+            "domId": "ctl00_ContentMain_chkIncludeClosed",
+            "nearbyText": [
+              "Member No:",
+              "Branch:",
+              "ALLMAINWESTEASTNORTH"
+            ]
+          },
+          {
+            "elementRef": "element-23",
+            "role": "button",
+            "accessibleName": "Search",
+            "currentValue": "Search",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "input",
+            "domId": "ctl00_ContentMain_btnSearch"
+          },
+          {
+            "elementRef": "element-24",
+            "role": "button",
+            "accessibleName": "Clear",
+            "currentValue": "Clear",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "input",
+            "domId": "ctl00_ContentMain_btnClear"
+          },
+          {
+            "elementRef": "element-25",
+            "role": "button",
+            "accessibleName": "Advanced Query",
+            "currentValue": "Advanced Query",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "input",
+            "domId": "ctl00_ContentMain_btnAdvanced"
+          }
+        ],
+        "screenshotPath": "evidence/log-in-and-look-up-a-member-then-read-their-regular-savings-balance/discovery/screenshots/observe-004.png",
+        "capturedAt": "2026-09-23T07:07:02.112Z"
+      }
+    },
+    {
+      "entryType": "rationale",
+      "sequence": 19,
+      "occurredAt": "2026-09-23T07:07:05.099Z",
+      "actor": "model",
+      "text": "I will click the \"Search\" button to search for the member."
+    },
+    {
+      "entryType": "policy_decision",
+      "sequence": 20,
+      "occurredAt": "2026-09-23T07:07:05.100Z",
+      "actor": "system",
+      "actionClass": "read",
+      "decision": "allow",
+      "reason": "Policy rule: read actions are allowed"
+    },
+    {
+      "entryType": "action",
+      "sequence": 21,
+      "occurredAt": "2026-09-23T07:07:05.131Z",
+      "actor": "model",
+      "action": {
+        "actionType": "click",
+        "target": [
+          {
+            "strategy": "css",
+            "selector": "[data-understudy-ref=\"element-23\"]"
+          }
+        ]
+      },
+      "succeeded": true
+    },
+    {
+      "entryType": "observation",
+      "sequence": 22,
+      "occurredAt": "2026-09-23T07:07:05.188Z",
+      "actor": "system",
+      "observation": {
+        "url": "http://localhost:4000/members/search",
+        "pageTitle": "Meridian Core - Member Search",
+        "elements": [
+          {
+            "elementRef": "element-0",
+            "role": "link",
+            "accessibleName": "Sign Out",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "a",
+            "nearbyText": [
+              "Signed in: tester |"
+            ]
+          },
+          {
+            "elementRef": "element-1",
+            "role": "link",
+            "accessibleName": "Member Search",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "a",
+            "nearbyText": [
+              "MEMBER SERVICES",
+              "Member Detail",
+              "Open Sub-Account",
+              "REPORTS",
+              "Daily Activity"
+            ]
+          },
+          {
+            "elementRef": "element-2",
+            "role": "link",
+            "accessibleName": "Member Detail",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "a",
+            "nearbyText": [
+              "MEMBER SERVICES",
+              "Member Search",
+              "Open Sub-Account",
+              "REPORTS",
+              "Daily Activity"
+            ]
+          },
+          {
+            "elementRef": "element-3",
+            "role": "link",
+            "accessibleName": "Open Sub-Account",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "a",
+            "nearbyText": [
+              "MEMBER SERVICES",
+              "Member Search",
+              "Member Detail",
+              "REPORTS",
+              "Daily Activity"
+            ]
+          },
+          {
+            "elementRef": "element-4",
+            "role": "link",
+            "accessibleName": "Daily Activity",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "a",
+            "nearbyText": [
+              "MEMBER SERVICES",
+              "Member Search",
+              "Member Detail",
+              "Open Sub-Account",
+              "REPORTS"
+            ]
+          },
+          {
+            "elementRef": "element-5",
+            "role": "link",
+            "accessibleName": "Audit Trail",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "a",
+            "nearbyText": [
+              "MEMBER SERVICES",
+              "Member Search",
+              "Member Detail",
+              "Open Sub-Account",
+              "REPORTS"
+            ]
+          },
+          {
+            "elementRef": "element-6",
+            "role": "link",
+            "accessibleName": "User Management",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "a",
+            "nearbyText": [
+              "MEMBER SERVICES",
+              "Member Search",
+              "Member Detail",
+              "Open Sub-Account",
+              "REPORTS"
+            ]
+          },
+          {
+            "elementRef": "element-7",
+            "role": "link",
+            "accessibleName": "Branch Config",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "a",
+            "nearbyText": [
+              "MEMBER SERVICES",
+              "Member Search",
+              "Member Detail",
+              "Open Sub-Account",
+              "REPORTS"
+            ]
+          },
+          {
+            "elementRef": "element-8",
+            "role": "form",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "form",
+            "domId": "ctl00_ContentMain_frmSearch"
+          },
+          {
+            "elementRef": "element-9",
+            "role": "table",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "table"
+          },
+          {
+            "elementRef": "element-10",
+            "role": "cell",
+            "accessibleName": "Member No:",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Branch:",
+              "ALLMAINWESTEASTNORTH",
+              "Include Closed"
+            ]
+          },
+          {
+            "elementRef": "element-11",
+            "role": "cell",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Member No:",
+              "Branch:",
+              "ALLMAINWESTEASTNORTH",
+              "Include Closed"
+            ]
+          },
+          {
+            "elementRef": "element-12",
+            "role": "textbox",
+            "currentValue": "12345",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "input",
+            "domId": "ctl00_ContentMain_txtMbrNo",
+            "nearbyText": [
+              "Member No:",
+              "Branch:",
+              "ALLMAINWESTEASTNORTH",
+              "Include Closed"
+            ]
+          },
+          {
+            "elementRef": "element-13",
+            "role": "cell",
+            "accessibleName": "Branch:",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Member No:",
+              "ALLMAINWESTEASTNORTH",
+              "Include Closed"
+            ]
+          },
+          {
+            "elementRef": "element-14",
+            "role": "cell",
+            "accessibleName": "ALLMAINWESTEASTNORTH",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Member No:",
+              "Branch:",
+              "Include Closed"
+            ]
+          },
+          {
+            "elementRef": "element-15",
+            "role": "combobox",
+            "currentValue": "ALL",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "select",
+            "domId": "ctl00_ContentMain_ddlBranch",
+            "nearbyText": [
+              "Member No:",
+              "Branch:",
+              "Include Closed"
+            ]
+          },
+          {
+            "elementRef": "element-16",
+            "role": "option",
+            "accessibleName": "ALL",
+            "isEnabled": true,
+            "isVisible": false,
+            "tagName": "option",
+            "nearbyText": [
+              "Member No:",
+              "Branch:",
+              "Include Closed"
+            ]
+          },
+          {
+            "elementRef": "element-17",
+            "role": "option",
+            "accessibleName": "MAIN",
+            "isEnabled": true,
+            "isVisible": false,
+            "tagName": "option",
+            "nearbyText": [
+              "Member No:",
+              "Branch:",
+              "Include Closed"
+            ]
+          },
+          {
+            "elementRef": "element-18",
+            "role": "option",
+            "accessibleName": "WEST",
+            "isEnabled": true,
+            "isVisible": false,
+            "tagName": "option",
+            "nearbyText": [
+              "Member No:",
+              "Branch:",
+              "Include Closed"
+            ]
+          },
+          {
+            "elementRef": "element-19",
+            "role": "option",
+            "accessibleName": "EAST",
+            "isEnabled": true,
+            "isVisible": false,
+            "tagName": "option",
+            "nearbyText": [
+              "Member No:",
+              "Branch:",
+              "Include Closed"
+            ]
+          },
+          {
+            "elementRef": "element-20",
+            "role": "option",
+            "accessibleName": "NORTH",
+            "isEnabled": true,
+            "isVisible": false,
+            "tagName": "option",
+            "nearbyText": [
+              "Member No:",
+              "Branch:",
+              "Include Closed"
+            ]
+          },
+          {
+            "elementRef": "element-21",
+            "role": "cell",
+            "accessibleName": "Include Closed",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Member No:",
+              "Branch:",
+              "ALLMAINWESTEASTNORTH"
+            ]
+          },
+          {
+            "elementRef": "element-22",
+            "role": "checkbox",
+            "accessibleName": "Include Closed",
+            "currentValue": "false",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "input",
+            "domId": "ctl00_ContentMain_chkIncludeClosed",
+            "nearbyText": [
+              "Member No:",
+              "Branch:",
+              "ALLMAINWESTEASTNORTH"
+            ]
+          },
+          {
+            "elementRef": "element-23",
+            "role": "button",
+            "accessibleName": "Search",
+            "currentValue": "Search",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "input",
+            "domId": "ctl00_ContentMain_btnSearch"
+          },
+          {
+            "elementRef": "element-24",
+            "role": "button",
+            "accessibleName": "Clear",
+            "currentValue": "Clear",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "input",
+            "domId": "ctl00_ContentMain_btnClear"
+          },
+          {
+            "elementRef": "element-25",
+            "role": "button",
+            "accessibleName": "Advanced Query",
+            "currentValue": "Advanced Query",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "input",
+            "domId": "ctl00_ContentMain_btnAdvanced"
+          },
+          {
+            "elementRef": "element-26",
+            "role": "table",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "table",
+            "domId": "ctl00_ContentMain_grdResults",
+            "nearbyText": [
+              "1 record(s) returned"
+            ]
+          },
+          {
+            "elementRef": "element-27",
+            "role": "columnheader",
+            "accessibleName": "Member No",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "th",
+            "nearbyText": [
+              "Member Name",
+              "Branch",
+              "Open Date",
+              "Phone",
+              "Status"
+            ]
+          },
+          {
+            "elementRef": "element-28",
+            "role": "columnheader",
+            "accessibleName": "Member Name",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "th",
+            "nearbyText": [
+              "Member No",
+              "Branch",
+              "Open Date",
+              "Phone",
+              "Status"
+            ]
+          },
+          {
+            "elementRef": "element-29",
+            "role": "columnheader",
+            "accessibleName": "Branch",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "th",
+            "nearbyText": [
+              "Member No",
+              "Member Name",
+              "Open Date",
+              "Phone",
+              "Status"
+            ]
+          },
+          {
+            "elementRef": "element-30",
+            "role": "columnheader",
+            "accessibleName": "Open Date",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "th",
+            "nearbyText": [
+              "Member No",
+              "Member Name",
+              "Branch",
+              "Phone",
+              "Status"
+            ]
+          },
+          {
+            "elementRef": "element-31",
+            "role": "columnheader",
+            "accessibleName": "Phone",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "th",
+            "nearbyText": [
+              "Member No",
+              "Member Name",
+              "Branch",
+              "Open Date",
+              "Status"
+            ]
+          },
+          {
+            "elementRef": "element-32",
+            "role": "columnheader",
+            "accessibleName": "Status",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "th",
+            "nearbyText": [
+              "Member No",
+              "Member Name",
+              "Branch",
+              "Open Date",
+              "Phone"
+            ]
+          },
+          {
+            "elementRef": "element-33",
+            "role": "cell",
+            "accessibleName": "12345",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Member No",
+              "JOHNSON, MARGARET A",
+              "MAIN",
+              "04/12/2003",
+              "(317) 555-0142"
+            ]
+          },
+          {
+            "elementRef": "element-34",
+            "role": "cell",
+            "accessibleName": "JOHNSON, MARGARET A",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Member Name",
+              "12345",
+              "MAIN",
+              "04/12/2003",
+              "(317) 555-0142"
+            ]
+          },
+          {
+            "elementRef": "element-35",
+            "role": "link",
+            "accessibleName": "JOHNSON, MARGARET A",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "a",
+            "nearbyText": [
+              "Member Name",
+              "12345",
+              "MAIN",
+              "04/12/2003",
+              "(317) 555-0142"
+            ]
+          },
+          {
+            "elementRef": "element-36",
+            "role": "form",
+            "isEnabled": true,
+            "isVisible": false,
+            "tagName": "form",
+            "nearbyText": [
+              "Member Name",
+              "12345",
+              "MAIN",
+              "04/12/2003",
+              "(317) 555-0142"
+            ]
+          },
+          {
+            "elementRef": "element-37",
+            "role": "cell",
+            "accessibleName": "MAIN",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Branch",
+              "12345",
+              "JOHNSON, MARGARET A",
+              "04/12/2003",
+              "(317) 555-0142"
+            ]
+          },
+          {
+            "elementRef": "element-38",
+            "role": "cell",
+            "accessibleName": "04/12/2003",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Open Date",
+              "12345",
+              "JOHNSON, MARGARET A",
+              "MAIN",
+              "(317) 555-0142"
+            ]
+          },
+          {
+            "elementRef": "element-39",
+            "role": "cell",
+            "accessibleName": "(317) 555-0142",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Phone",
+              "12345",
+              "JOHNSON, MARGARET A",
+              "MAIN",
+              "04/12/2003"
+            ]
+          },
+          {
+            "elementRef": "element-40",
+            "role": "cell",
+            "accessibleName": "Active",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Status",
+              "12345",
+              "JOHNSON, MARGARET A",
+              "MAIN",
+              "04/12/2003"
+            ]
+          }
+        ],
+        "screenshotPath": "evidence/log-in-and-look-up-a-member-then-read-their-regular-savings-balance/discovery/screenshots/observe-005.png",
+        "capturedAt": "2026-09-23T07:07:05.188Z"
+      }
+    },
+    {
+      "entryType": "rationale",
+      "sequence": 23,
+      "occurredAt": "2026-09-23T07:07:08.067Z",
+      "actor": "model",
+      "text": "I will click on the member link \"JOHNSON, MARGARET A\" to view member details and sub-accounts."
+    },
+    {
+      "entryType": "policy_decision",
+      "sequence": 24,
+      "occurredAt": "2026-09-23T07:07:08.067Z",
+      "actor": "system",
+      "actionClass": "read",
+      "decision": "allow",
+      "reason": "Policy rule: read actions are allowed"
+    },
+    {
+      "entryType": "action",
+      "sequence": 25,
+      "occurredAt": "2026-09-23T07:07:08.142Z",
+      "actor": "model",
+      "action": {
+        "actionType": "click",
+        "target": [
+          {
+            "strategy": "css",
+            "selector": "[data-understudy-ref=\"element-35\"]"
+          }
+        ]
+      },
+      "succeeded": true
+    },
+    {
+      "entryType": "observation",
+      "sequence": 26,
+      "occurredAt": "2026-09-23T07:07:08.198Z",
+      "actor": "system",
+      "observation": {
+        "url": "http://localhost:4000/members/detail",
+        "pageTitle": "Meridian Core - Member Detail - 12345",
+        "elements": [
+          {
+            "elementRef": "element-0",
+            "role": "link",
+            "accessibleName": "Sign Out",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "a",
+            "nearbyText": [
+              "Signed in: tester |"
+            ]
+          },
+          {
+            "elementRef": "element-1",
+            "role": "link",
+            "accessibleName": "Member Search",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "a",
+            "nearbyText": [
+              "MEMBER SERVICES",
+              "Member Detail",
+              "Open Sub-Account",
+              "REPORTS",
+              "Daily Activity"
+            ]
+          },
+          {
+            "elementRef": "element-2",
+            "role": "link",
+            "accessibleName": "Member Detail",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "a",
+            "nearbyText": [
+              "MEMBER SERVICES",
+              "Member Search",
+              "Open Sub-Account",
+              "REPORTS",
+              "Daily Activity"
+            ]
+          },
+          {
+            "elementRef": "element-3",
+            "role": "link",
+            "accessibleName": "Open Sub-Account",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "a",
+            "nearbyText": [
+              "MEMBER SERVICES",
+              "Member Search",
+              "Member Detail",
+              "REPORTS",
+              "Daily Activity"
+            ]
+          },
+          {
+            "elementRef": "element-4",
+            "role": "link",
+            "accessibleName": "Daily Activity",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "a",
+            "nearbyText": [
+              "MEMBER SERVICES",
+              "Member Search",
+              "Member Detail",
+              "Open Sub-Account",
+              "REPORTS"
+            ]
+          },
+          {
+            "elementRef": "element-5",
+            "role": "link",
+            "accessibleName": "Audit Trail",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "a",
+            "nearbyText": [
+              "MEMBER SERVICES",
+              "Member Search",
+              "Member Detail",
+              "Open Sub-Account",
+              "REPORTS"
+            ]
+          },
+          {
+            "elementRef": "element-6",
+            "role": "link",
+            "accessibleName": "User Management",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "a",
+            "nearbyText": [
+              "MEMBER SERVICES",
+              "Member Search",
+              "Member Detail",
+              "Open Sub-Account",
+              "REPORTS"
+            ]
+          },
+          {
+            "elementRef": "element-7",
+            "role": "link",
+            "accessibleName": "Branch Config",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "a",
+            "nearbyText": [
+              "MEMBER SERVICES",
+              "Member Search",
+              "Member Detail",
+              "Open Sub-Account",
+              "REPORTS"
+            ]
+          },
+          {
+            "elementRef": "element-8",
+            "role": "table",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "table"
+          },
+          {
+            "elementRef": "element-9",
+            "role": "cell",
+            "accessibleName": "Member No:",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "12345",
+              "Name:",
+              "JOHNSON, MARGARET A"
+            ]
+          },
+          {
+            "elementRef": "element-10",
+            "role": "cell",
+            "accessibleName": "12345",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Member No:",
+              "Name:",
+              "JOHNSON, MARGARET A"
+            ]
+          },
+          {
+            "elementRef": "element-11",
+            "role": "cell",
+            "accessibleName": "Name:",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Member No:",
+              "12345",
+              "JOHNSON, MARGARET A"
+            ]
+          },
+          {
+            "elementRef": "element-12",
+            "role": "cell",
+            "accessibleName": "JOHNSON, MARGARET A",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Member No:",
+              "12345",
+              "Name:"
+            ]
+          },
+          {
+            "elementRef": "element-13",
+            "role": "cell",
+            "accessibleName": "SSN:",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Member No:",
+              "***-**-4829",
+              "DOB:",
+              "03/15/1968"
+            ]
+          },
+          {
+            "elementRef": "element-14",
+            "role": "cell",
+            "accessibleName": "***-**-4829",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "12345",
+              "SSN:",
+              "DOB:",
+              "03/15/1968"
+            ]
+          },
+          {
+            "elementRef": "element-15",
+            "role": "cell",
+            "accessibleName": "DOB:",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Name:",
+              "SSN:",
+              "***-**-4829",
+              "03/15/1968"
+            ]
+          },
+          {
+            "elementRef": "element-16",
+            "role": "cell",
+            "accessibleName": "03/15/1968",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "JOHNSON, MARGARET A",
+              "SSN:",
+              "***-**-4829",
+              "DOB:"
+            ]
+          },
+          {
+            "elementRef": "element-17",
+            "role": "cell",
+            "accessibleName": "Address:",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Member No:",
+              "2847 OAKWOOD DR",
+              "Phone:",
+              "(317) 555-0142"
+            ]
+          },
+          {
+            "elementRef": "element-18",
+            "role": "cell",
+            "accessibleName": "2847 OAKWOOD DR",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "12345",
+              "Address:",
+              "Phone:",
+              "(317) 555-0142"
+            ]
+          },
+          {
+            "elementRef": "element-19",
+            "role": "cell",
+            "accessibleName": "Phone:",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Name:",
+              "Address:",
+              "2847 OAKWOOD DR",
+              "(317) 555-0142"
+            ]
+          },
+          {
+            "elementRef": "element-20",
+            "role": "cell",
+            "accessibleName": "(317) 555-0142",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "JOHNSON, MARGARET A",
+              "Address:",
+              "2847 OAKWOOD DR",
+              "Phone:"
+            ]
+          },
+          {
+            "elementRef": "element-21",
+            "role": "cell",
+            "accessibleName": "City/State/Zip:",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Member No:",
+              "WESTFIELD, IN 46074",
+              "Email:",
+              "mjohnson@mailhost.net"
+            ]
+          },
+          {
+            "elementRef": "element-22",
+            "role": "cell",
+            "accessibleName": "WESTFIELD, IN 46074",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "12345",
+              "City/State/Zip:",
+              "Email:",
+              "mjohnson@mailhost.net"
+            ]
+          },
+          {
+            "elementRef": "element-23",
+            "role": "cell",
+            "accessibleName": "Email:",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Name:",
+              "City/State/Zip:",
+              "WESTFIELD, IN 46074",
+              "mjohnson@mailhost.net"
+            ]
+          },
+          {
+            "elementRef": "element-24",
+            "role": "cell",
+            "accessibleName": "mjohnson@mailhost.net",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "JOHNSON, MARGARET A",
+              "City/State/Zip:",
+              "WESTFIELD, IN 46074",
+              "Email:"
+            ]
+          },
+          {
+            "elementRef": "element-25",
+            "role": "cell",
+            "accessibleName": "Branch:",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Member No:",
+              "MAIN",
+              "Member Since:",
+              "04/12/2003"
+            ]
+          },
+          {
+            "elementRef": "element-26",
+            "role": "cell",
+            "accessibleName": "MAIN",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "12345",
+              "Branch:",
+              "Member Since:",
+              "04/12/2003"
+            ]
+          },
+          {
+            "elementRef": "element-27",
+            "role": "cell",
+            "accessibleName": "Member Since:",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Name:",
+              "Branch:",
+              "MAIN",
+              "04/12/2003"
+            ]
+          },
+          {
+            "elementRef": "element-28",
+            "role": "cell",
+            "accessibleName": "04/12/2003",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "JOHNSON, MARGARET A",
+              "Branch:",
+              "MAIN",
+              "Member Since:"
+            ]
+          },
+          {
+            "elementRef": "element-29",
+            "role": "table",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "table",
+            "domId": "ctl00_ContentMain_grdShares"
+          },
+          {
+            "elementRef": "element-30",
+            "role": "columnheader",
+            "accessibleName": "Share ID",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "th",
+            "nearbyText": [
+              "Description",
+              "Current Balance",
+              "Available",
+              "Maturity",
+              "Status"
+            ]
+          },
+          {
+            "elementRef": "element-31",
+            "role": "columnheader",
+            "accessibleName": "Description",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "th",
+            "nearbyText": [
+              "Share ID",
+              "Current Balance",
+              "Available",
+              "Maturity",
+              "Status"
+            ]
+          },
+          {
+            "elementRef": "element-32",
+            "role": "columnheader",
+            "accessibleName": "Current Balance",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "th",
+            "nearbyText": [
+              "Share ID",
+              "Description",
+              "Available",
+              "Maturity",
+              "Status"
+            ]
+          },
+          {
+            "elementRef": "element-33",
+            "role": "columnheader",
+            "accessibleName": "Available",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "th",
+            "nearbyText": [
+              "Share ID",
+              "Description",
+              "Current Balance",
+              "Maturity",
+              "Status"
+            ]
+          },
+          {
+            "elementRef": "element-34",
+            "role": "columnheader",
+            "accessibleName": "Maturity",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "th",
+            "nearbyText": [
+              "Share ID",
+              "Description",
+              "Current Balance",
+              "Available",
+              "Status"
+            ]
+          },
+          {
+            "elementRef": "element-35",
+            "role": "columnheader",
+            "accessibleName": "Status",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "th",
+            "nearbyText": [
+              "Share ID",
+              "Description",
+              "Current Balance",
+              "Available",
+              "Maturity"
+            ]
+          },
+          {
+            "elementRef": "element-36",
+            "role": "cell",
+            "accessibleName": "S0001",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Share ID",
+              "Regular Share Savings (00)",
+              "$4,182.90",
+              "$4,182.90",
+              "—"
+            ]
+          },
+          {
+            "elementRef": "element-37",
+            "role": "cell",
+            "accessibleName": "Regular Share Savings (00)",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Description",
+              "S0001",
+              "$4,182.90",
+              "$4,182.90",
+              "—"
+            ]
+          },
+          {
+            "elementRef": "element-38",
+            "role": "cell",
+            "accessibleName": "$4,182.90",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Current Balance",
+              "S0001",
+              "Regular Share Savings (00)",
+              "$4,182.90",
+              "—"
+            ]
+          },
+          {
+            "elementRef": "element-39",
+            "role": "cell",
+            "accessibleName": "$4,182.90",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Available",
+              "S0001",
+              "Regular Share Savings (00)",
+              "$4,182.90",
+              "—"
+            ]
+          },
+          {
+            "elementRef": "element-40",
+            "role": "cell",
+            "accessibleName": "—",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Maturity",
+              "S0001",
+              "Regular Share Savings (00)",
+              "$4,182.90",
+              "$4,182.90"
+            ]
+          },
+          {
+            "elementRef": "element-41",
+            "role": "cell",
+            "accessibleName": "Open",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Status",
+              "S0001",
+              "Regular Share Savings (00)",
+              "$4,182.90",
+              "$4,182.90"
+            ]
+          },
+          {
+            "elementRef": "element-42",
+            "role": "cell",
+            "accessibleName": "S0010",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Share ID",
+              "Checking (10)",
+              "$1,247.33",
+              "$1,097.33",
+              "—"
+            ]
+          },
+          {
+            "elementRef": "element-43",
+            "role": "cell",
+            "accessibleName": "Checking (10)",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Description",
+              "S0010",
+              "$1,247.33",
+              "$1,097.33",
+              "—"
+            ]
+          },
+          {
+            "elementRef": "element-44",
+            "role": "cell",
+            "accessibleName": "$1,247.33",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Current Balance",
+              "S0010",
+              "Checking (10)",
+              "$1,097.33",
+              "—"
+            ]
+          },
+          {
+            "elementRef": "element-45",
+            "role": "cell",
+            "accessibleName": "$1,097.33",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Available",
+              "S0010",
+              "Checking (10)",
+              "$1,247.33",
+              "—"
+            ]
+          },
+          {
+            "elementRef": "element-46",
+            "role": "cell",
+            "accessibleName": "—",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Maturity",
+              "S0010",
+              "Checking (10)",
+              "$1,247.33",
+              "$1,097.33"
+            ]
+          },
+          {
+            "elementRef": "element-47",
+            "role": "cell",
+            "accessibleName": "Open",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Status",
+              "S0010",
+              "Checking (10)",
+              "$1,247.33",
+              "$1,097.33"
+            ]
+          },
+          {
+            "elementRef": "element-48",
+            "role": "cell",
+            "accessibleName": "S0040",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Share ID",
+              "12-Mo Certificate (40)",
+              "$10,000.00",
+              "—",
+              "09/30/2026"
+            ]
+          },
+          {
+            "elementRef": "element-49",
+            "role": "cell",
+            "accessibleName": "12-Mo Certificate (40)",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Description",
+              "S0040",
+              "$10,000.00",
+              "—",
+              "09/30/2026"
+            ]
+          },
+          {
+            "elementRef": "element-50",
+            "role": "cell",
+            "accessibleName": "$10,000.00",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Current Balance",
+              "S0040",
+              "12-Mo Certificate (40)",
+              "—",
+              "09/30/2026"
+            ]
+          },
+          {
+            "elementRef": "element-51",
+            "role": "cell",
+            "accessibleName": "—",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Available",
+              "S0040",
+              "12-Mo Certificate (40)",
+              "$10,000.00",
+              "09/30/2026"
+            ]
+          },
+          {
+            "elementRef": "element-52",
+            "role": "cell",
+            "accessibleName": "09/30/2026",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Maturity",
+              "S0040",
+              "12-Mo Certificate (40)",
+              "$10,000.00",
+              "—"
+            ]
+          },
+          {
+            "elementRef": "element-53",
+            "role": "cell",
+            "accessibleName": "Open",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Status",
+              "S0040",
+              "12-Mo Certificate (40)",
+              "$10,000.00",
+              "—"
+            ]
+          },
+          {
+            "elementRef": "element-54",
+            "role": "cell",
+            "accessibleName": "S0002",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Share ID",
+              "Holiday Club Savings (00)",
+              "$0.00",
+              "$0.00",
+              "—"
+            ]
+          },
+          {
+            "elementRef": "element-55",
+            "role": "cell",
+            "accessibleName": "Holiday Club Savings (00)",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Description",
+              "S0002",
+              "$0.00",
+              "$0.00",
+              "—"
+            ]
+          },
+          {
+            "elementRef": "element-56",
+            "role": "cell",
+            "accessibleName": "$0.00",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Current Balance",
+              "S0002",
+              "Holiday Club Savings (00)",
+              "$0.00",
+              "—"
+            ]
+          },
+          {
+            "elementRef": "element-57",
+            "role": "cell",
+            "accessibleName": "$0.00",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Available",
+              "S0002",
+              "Holiday Club Savings (00)",
+              "$0.00",
+              "—"
+            ]
+          },
+          {
+            "elementRef": "element-58",
+            "role": "cell",
+            "accessibleName": "—",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Maturity",
+              "S0002",
+              "Holiday Club Savings (00)",
+              "$0.00",
+              "$0.00"
+            ]
+          },
+          {
+            "elementRef": "element-59",
+            "role": "cell",
+            "accessibleName": "Closed",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Status",
+              "S0002",
+              "Holiday Club Savings (00)",
+              "$0.00",
+              "$0.00"
+            ]
+          },
+          {
+            "elementRef": "element-60",
+            "role": "cell",
+            "accessibleName": "Total (Open):",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Share ID",
+              "$15,430.23"
+            ]
+          },
+          {
+            "elementRef": "element-61",
+            "role": "cell",
+            "accessibleName": "$15,430.23",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Description",
+              "Total (Open):"
+            ]
+          },
+          {
+            "elementRef": "element-62",
+            "role": "cell",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "td",
+            "nearbyText": [
+              "Current Balance",
+              "Total (Open):",
+              "$15,430.23"
+            ]
+          },
+          {
+            "elementRef": "element-63",
+            "role": "button",
+            "accessibleName": "Open Sub-Account",
+            "currentValue": "Open Sub-Account",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "input",
+            "domId": "ctl00_ContentMain_btnOpenSub"
+          },
+          {
+            "elementRef": "element-64",
+            "role": "button",
+            "accessibleName": "Transfer",
+            "currentValue": "Transfer",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "input",
+            "domId": "ctl00_ContentMain_btnTransfer"
+          },
+          {
+            "elementRef": "element-65",
+            "role": "button",
+            "accessibleName": "Print Statement",
+            "currentValue": "Print Statement",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "input",
+            "domId": "ctl00_ContentMain_btnPrint"
+          },
+          {
+            "elementRef": "element-66",
+            "role": "form",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "form"
+          },
+          {
+            "elementRef": "element-67",
+            "role": "button",
+            "accessibleName": "« Back to Search",
+            "currentValue": "« Back to Search",
+            "isEnabled": true,
+            "isVisible": true,
+            "tagName": "input",
+            "domId": "ctl00_ContentMain_btnBack"
+          }
+        ],
+        "screenshotPath": "evidence/log-in-and-look-up-a-member-then-read-their-regular-savings-balance/discovery/screenshots/observe-006.png",
+        "capturedAt": "2026-09-23T07:07:08.198Z"
+      }
+    },
+    {
+      "entryType": "rationale",
+      "sequence": 27,
+      "occurredAt": "2026-09-23T07:08:20.753Z",
+      "actor": "model",
+      "text": "I will extract the regular savings balance from element `ref=element-38`."
+    },
+    {
+      "entryType": "extraction",
+      "sequence": 28,
+      "occurredAt": "2026-09-23T07:08:20.763Z",
+      "actor": "model",
+      "outputName": "element-38",
+      "rawValue": "$4,182.90",
+      "coerced": false
+    },
+    {
+      "entryType": "rationale",
+      "sequence": 29,
+      "occurredAt": "2026-09-23T07:08:24.636Z",
+      "actor": "model",
+      "text": "I will now complete the task and report the extracted regular savings balance."
+    }
+  ],
+  "outcome": {
+    "classification": "success",
+    "outputs": {
+      "regularSavingsBalance": "$4,182.90"
+    }
+  }
+}

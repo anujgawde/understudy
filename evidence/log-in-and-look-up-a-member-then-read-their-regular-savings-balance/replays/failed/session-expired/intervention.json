@@ -1,0 +1,17 @@
+{
+  "interventionId": "388b2723-2a33-41c6-a10d-aac963a4c7c8",
+  "sessionId": "replay-633b1f0e-b08e-467c-a93b-6fd4304c71c3",
+  "raisedAt": "2026-09-23T07:10:11.065Z",
+  "severity": "critical",
+  "state": "raised",
+  "failureCode": "session_expired",
+  "failedAtStepId": "click-johnsonMargaretA",
+  "message": "Session expired before \"click-johnsonMargaretA\" could complete",
+  "context": {
+    "runId": "633b1f0e-b08e-467c-a93b-6fd4304c71c3",
+    "capabilityId": "log-in-and-look-up-a-member-then-read-their-regular-savings-balance",
+    "pageUrl": "http://localhost:4000/members/search",
+    "screenshotPath": "intervention.png",
+    "lastSuccessfulStepId": "click-search"
+  }
+}

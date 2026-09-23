@@ -1,0 +1,306 @@
+{
+  "capabilityId": "log-in-and-look-up-a-member-then-read-their-regular-savings-balance",
+  "name": "log in and look up a member, then read their regular savings balance",
+  "version": 1,
+  "goal": "log in and look up a member, then read their regular savings balance",
+  "status": "approved",
+  "inputs": [
+    {
+      "name": "operatorUserId",
+      "valueType": "string",
+      "required": true,
+      "secret": false,
+      "description": "User ID:"
+    },
+    {
+      "name": "operatorPassword",
+      "valueType": "string",
+      "required": true,
+      "secret": true,
+      "description": "Password:"
+    },
+    {
+      "name": "memberNumber",
+      "valueType": "string",
+      "required": true,
+      "secret": false,
+      "description": "Member No:"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "currentBalance",
+      "valueType": "number",
+      "required": true,
+      "description": "Current Balance"
+    }
+  ],
+  "steps": [
+    {
+      "stepId": "navigate-1",
+      "action": {
+        "actionType": "navigate",
+        "url": "http://localhost:4000"
+      },
+      "waitFor": {
+        "waitUntil": "pageLoad"
+      },
+      "risk": "reversible"
+    },
+    {
+      "stepId": "fill-userId",
+      "action": {
+        "actionType": "fill",
+        "target": [
+          {
+            "strategy": "adjacent",
+            "labelText": "User ID:",
+            "direction": "next",
+            "targetRole": "textbox"
+          },
+          {
+            "strategy": "css",
+            "selector": "#ctl00_ContentMain_txtUserID"
+          },
+          {
+            "strategy": "role",
+            "role": "textbox",
+            "matchIndex": 0
+          }
+        ],
+        "value": "{{operatorUserId}}"
+      },
+      "risk": "reversible"
+    },
+    {
+      "stepId": "fill-password",
+      "action": {
+        "actionType": "fill",
+        "target": [
+          {
+            "strategy": "adjacent",
+            "labelText": "Password:",
+            "direction": "next",
+            "targetRole": "textbox"
+          },
+          {
+            "strategy": "css",
+            "selector": "#ctl00_ContentMain_txtPassword"
+          },
+          {
+            "strategy": "role",
+            "role": "textbox",
+            "matchIndex": 1
+          }
+        ],
+        "value": "{{operatorPassword}}"
+      },
+      "risk": "reversible"
+    },
+    {
+      "stepId": "click-signIn",
+      "action": {
+        "actionType": "click",
+        "target": [
+          {
+            "strategy": "role",
+            "role": "button",
+            "accessibleName": "Sign In"
+          },
+          {
+            "strategy": "text",
+            "text": "Sign In",
+            "matchExactly": true
+          },
+          {
+            "strategy": "css",
+            "selector": "#ctl00_ContentMain_btnLogin"
+          }
+        ]
+      },
+      "waitFor": {
+        "waitUntil": "pageLoad"
+      },
+      "risk": "reversible"
+    },
+    {
+      "stepId": "fill-memberNo",
+      "action": {
+        "actionType": "fill",
+        "target": [
+          {
+            "strategy": "adjacent",
+            "labelText": "Member No:",
+            "direction": "next",
+            "targetRole": "textbox"
+          },
+          {
+            "strategy": "css",
+            "selector": "#ctl00_ContentMain_txtMbrNo"
+          },
+          {
+            "strategy": "role",
+            "role": "textbox",
+            "matchIndex": 0
+          }
+        ],
+        "value": "{{memberNumber}}"
+      },
+      "risk": "reversible"
+    },
+    {
+      "stepId": "click-search",
+      "action": {
+        "actionType": "click",
+        "target": [
+          {
+            "strategy": "role",
+            "role": "button",
+            "accessibleName": "Search"
+          },
+          {
+            "strategy": "text",
+            "text": "Search",
+            "matchExactly": true
+          },
+          {
+            "strategy": "css",
+            "selector": "#ctl00_ContentMain_btnSearch"
+          }
+        ]
+      },
+      "risk": "reversible"
+    },
+    {
+      "stepId": "click-johnsonMargaretA",
+      "action": {
+        "actionType": "click",
+        "target": [
+          {
+            "strategy": "role",
+            "role": "link",
+            "accessibleName": "JOHNSON, MARGARET A"
+          },
+          {
+            "strategy": "text",
+            "text": "JOHNSON, MARGARET A",
+            "matchExactly": true
+          },
+          {
+            "strategy": "role",
+            "role": "link",
+            "matchIndex": 8
+          }
+        ]
+      },
+      "waitFor": {
+        "waitUntil": "pageLoad"
+      },
+      "risk": "reversible"
+    }
+  ],
+  "checkpoints": [
+    {
+      "checkpointId": "reached-login",
+      "afterStepId": "navigate-1",
+      "allOf": [
+        {
+          "assert": "url_matches",
+          "pattern": "/login(\\?|$)"
+        }
+      ]
+    },
+    {
+      "checkpointId": "reached-membersSearch",
+      "afterStepId": "click-signIn",
+      "allOf": [
+        {
+          "assert": "url_matches",
+          "pattern": "/members/search(\\?|$)"
+        }
+      ]
+    },
+    {
+      "checkpointId": "reached-membersDetail",
+      "afterStepId": "click-johnsonMargaretA",
+      "allOf": [
+        {
+          "assert": "url_matches",
+          "pattern": "/members/detail(\\?|$)"
+        }
+      ]
+    },
+    {
+      "checkpointId": "results-present",
+      "afterStepId": "click-johnsonMargaretA",
+      "allOf": [
+        {
+          "assert": "element_present",
+          "target": [
+            {
+              "strategy": "adjacent",
+              "labelText": "Current Balance",
+              "direction": "next"
+            },
+            {
+              "strategy": "role",
+              "role": "cell",
+              "matchIndex": 22
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "extractions": [
+    {
+      "outputName": "currentBalance",
+      "target": [
+        {
+          "strategy": "adjacent",
+          "labelText": "Current Balance",
+          "direction": "next"
+        },
+        {
+          "strategy": "role",
+          "role": "cell",
+          "matchIndex": 22
+        }
+      ],
+      "valueType": "number"
+    }
+  ],
+  "businessOutcomes": [
+    {
+      "code": "invalid_credentials",
+      "message": "The operator credentials provided were invalid.",
+      "signal": {
+        "assert": "text_present",
+        "text": "Invalid user ID or password"
+      },
+      "condition": {
+        "when": "checkpoint_failed",
+        "checkpointId": "reached-membersSearch"
+      }
+    },
+    {
+      "code": "member_not_found",
+      "message": "No member matched that member number.",
+      "signal": {
+        "assert": "text_present",
+        "text": "No records matched"
+      },
+      "condition": {
+        "when": "checkpoint_failed",
+        "checkpointId": "reached-membersDetail"
+      }
+    }
+  ],
+  "expectedDialogs": [],
+  "interstitials": [],
+  "provenance": {
+    "discoveredByModel": "gemini-3.6-flash",
+    "discoveryRunId": "d1e6ca8a-142f-4bea-9af7-e4c258f4faf2",
+    "discoveredAt": "2026-09-23T07:08:24.651Z"
+  }
+}

@@ -1,0 +1,242 @@
+{
+  "runId": "dca0a050-c08b-4f42-bbdf-a6192552e17a",
+  "mode": "replay",
+  "capabilityId": "log-in-and-look-up-a-member-then-read-their-regular-savings-balance",
+  "inputs": {
+    "memberNumber": "33333",
+    "operatorUserId": "tester",
+    "operatorPassword": "[redacted]"
+  },
+  "startedAt": "2026-09-23T07:10:08.210Z",
+  "completedAt": "2026-09-23T07:10:08.842Z",
+  "entries": [
+    {
+      "entryType": "action",
+      "sequence": 0,
+      "occurredAt": "2026-09-23T07:10:08.230Z",
+      "actor": "system",
+      "action": {
+        "actionType": "navigate",
+        "url": "http://localhost:4000"
+      },
+      "stepId": "navigate-1",
+      "succeeded": true
+    },
+    {
+      "entryType": "assertion",
+      "sequence": 1,
+      "occurredAt": "2026-09-23T07:10:08.288Z",
+      "actor": "system",
+      "checkpointId": "reached-login",
+      "passed": true
+    },
+    {
+      "entryType": "action",
+      "sequence": 2,
+      "occurredAt": "2026-09-23T07:10:08.351Z",
+      "actor": "system",
+      "action": {
+        "actionType": "fill",
+        "target": [
+          {
+            "strategy": "adjacent",
+            "labelText": "User ID:",
+            "direction": "next",
+            "targetRole": "textbox"
+          },
+          {
+            "strategy": "css",
+            "selector": "#ctl00_ContentMain_txtUserID"
+          },
+          {
+            "strategy": "role",
+            "role": "textbox",
+            "matchIndex": 0
+          }
+        ],
+        "value": "tester"
+      },
+      "stepId": "fill-userId",
+      "resolvedByIndex": 0,
+      "succeeded": true
+    },
+    {
+      "entryType": "action",
+      "sequence": 3,
+      "occurredAt": "2026-09-23T07:10:08.418Z",
+      "actor": "system",
+      "action": {
+        "actionType": "fill",
+        "target": [
+          {
+            "strategy": "adjacent",
+            "labelText": "Password:",
+            "direction": "next",
+            "targetRole": "textbox"
+          },
+          {
+            "strategy": "css",
+            "selector": "#ctl00_ContentMain_txtPassword"
+          },
+          {
+            "strategy": "role",
+            "role": "textbox",
+            "matchIndex": 1
+          }
+        ],
+        "value": "[redacted]"
+      },
+      "stepId": "fill-password",
+      "resolvedByIndex": 0,
+      "succeeded": true
+    },
+    {
+      "entryType": "action",
+      "sequence": 4,
+      "occurredAt": "2026-09-23T07:10:08.513Z",
+      "actor": "system",
+      "action": {
+        "actionType": "click",
+        "target": [
+          {
+            "strategy": "role",
+            "role": "button",
+            "accessibleName": "Sign In"
+          },
+          {
+            "strategy": "text",
+            "text": "Sign In",
+            "matchExactly": true
+          },
+          {
+            "strategy": "css",
+            "selector": "#ctl00_ContentMain_btnLogin"
+          }
+        ]
+      },
+      "stepId": "click-signIn",
+      "resolvedByIndex": 0,
+      "succeeded": true
+    },
+    {
+      "entryType": "assertion",
+      "sequence": 5,
+      "occurredAt": "2026-09-23T07:10:08.545Z",
+      "actor": "system",
+      "checkpointId": "reached-membersSearch",
+      "passed": true
+    },
+    {
+      "entryType": "action",
+      "sequence": 6,
+      "occurredAt": "2026-09-23T07:10:08.583Z",
+      "actor": "system",
+      "action": {
+        "actionType": "fill",
+        "target": [
+          {
+            "strategy": "adjacent",
+            "labelText": "Member No:",
+            "direction": "next",
+            "targetRole": "textbox"
+          },
+          {
+            "strategy": "css",
+            "selector": "#ctl00_ContentMain_txtMbrNo"
+          },
+          {
+            "strategy": "role",
+            "role": "textbox",
+            "matchIndex": 0
+          }
+        ],
+        "value": "33333"
+      },
+      "stepId": "fill-memberNo",
+      "resolvedByIndex": 0,
+      "succeeded": true
+    },
+    {
+      "entryType": "action",
+      "sequence": 7,
+      "occurredAt": "2026-09-23T07:10:08.669Z",
+      "actor": "system",
+      "action": {
+        "actionType": "click",
+        "target": [
+          {
+            "strategy": "role",
+            "role": "button",
+            "accessibleName": "Search"
+          },
+          {
+            "strategy": "text",
+            "text": "Search",
+            "matchExactly": true
+          },
+          {
+            "strategy": "css",
+            "selector": "#ctl00_ContentMain_btnSearch"
+          }
+        ]
+      },
+      "stepId": "click-search",
+      "resolvedByIndex": 0,
+      "succeeded": true
+    },
+    {
+      "entryType": "action",
+      "sequence": 8,
+      "occurredAt": "2026-09-23T07:10:08.758Z",
+      "actor": "system",
+      "action": {
+        "actionType": "click",
+        "target": [
+          {
+            "strategy": "role",
+            "role": "link",
+            "accessibleName": "JOHNSON, MARGARET A"
+          },
+          {
+            "strategy": "text",
+            "text": "JOHNSON, MARGARET A",
+            "matchExactly": true
+          },
+          {
+            "strategy": "role",
+            "role": "link",
+            "matchIndex": 8
+          }
+        ]
+      },
+      "stepId": "click-johnsonMargaretA",
+      "resolvedByIndex": 2,
+      "succeeded": true
+    },
+    {
+      "entryType": "dialog",
+      "sequence": 9,
+      "occurredAt": "2026-09-23T07:10:08.811Z",
+      "actor": "system",
+      "kind": "confirm",
+      "message": "This member has a pending dispute. Continue to the account summary?",
+      "expected": false
+    },
+    {
+      "entryType": "intervention",
+      "sequence": 10,
+      "occurredAt": "2026-09-23T07:10:08.842Z",
+      "actor": "system",
+      "interventionId": "c67209c4-178f-4c86-8c59-edd294b89bc3",
+      "state": "raised"
+    }
+  ],
+  "outcome": {
+    "classification": "failed",
+    "failureCode": "unexpected_dialog",
+    "message": "Step \"click-johnsonMargaretA\" raised an undeclared confirm dialog: \"This member has a pending dispute. Continue to the account summary?\"",
+    "failedAtStepId": "click-johnsonMargaretA",
+    "recoveries": [],
+    "interventionRaised": true
+  }
+}

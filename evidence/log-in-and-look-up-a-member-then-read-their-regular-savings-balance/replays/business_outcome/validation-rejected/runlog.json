@@ -1,0 +1,224 @@
+{
+  "runId": "439f0ac2-5897-4c21-bac7-10af5dfffecf",
+  "mode": "replay",
+  "capabilityId": "log-in-and-look-up-a-member-then-read-their-regular-savings-balance",
+  "inputs": {
+    "memberNumber": "88888",
+    "operatorUserId": "tester",
+    "operatorPassword": "[redacted]"
+  },
+  "startedAt": "2026-09-23T07:10:01.527Z",
+  "completedAt": "2026-09-23T07:10:02.072Z",
+  "entries": [
+    {
+      "entryType": "action",
+      "sequence": 0,
+      "occurredAt": "2026-09-23T07:10:01.547Z",
+      "actor": "system",
+      "action": {
+        "actionType": "navigate",
+        "url": "http://localhost:4000"
+      },
+      "stepId": "navigate-1",
+      "succeeded": true
+    },
+    {
+      "entryType": "assertion",
+      "sequence": 1,
+      "occurredAt": "2026-09-23T07:10:01.604Z",
+      "actor": "system",
+      "checkpointId": "reached-login",
+      "passed": true
+    },
+    {
+      "entryType": "action",
+      "sequence": 2,
+      "occurredAt": "2026-09-23T07:10:01.668Z",
+      "actor": "system",
+      "action": {
+        "actionType": "fill",
+        "target": [
+          {
+            "strategy": "adjacent",
+            "labelText": "User ID:",
+            "direction": "next",
+            "targetRole": "textbox"
+          },
+          {
+            "strategy": "css",
+            "selector": "#ctl00_ContentMain_txtUserID"
+          },
+          {
+            "strategy": "role",
+            "role": "textbox",
+            "matchIndex": 0
+          }
+        ],
+        "value": "tester"
+      },
+      "stepId": "fill-userId",
+      "resolvedByIndex": 0,
+      "succeeded": true
+    },
+    {
+      "entryType": "action",
+      "sequence": 3,
+      "occurredAt": "2026-09-23T07:10:01.737Z",
+      "actor": "system",
+      "action": {
+        "actionType": "fill",
+        "target": [
+          {
+            "strategy": "adjacent",
+            "labelText": "Password:",
+            "direction": "next",
+            "targetRole": "textbox"
+          },
+          {
+            "strategy": "css",
+            "selector": "#ctl00_ContentMain_txtPassword"
+          },
+          {
+            "strategy": "role",
+            "role": "textbox",
+            "matchIndex": 1
+          }
+        ],
+        "value": "[redacted]"
+      },
+      "stepId": "fill-password",
+      "resolvedByIndex": 0,
+      "succeeded": true
+    },
+    {
+      "entryType": "action",
+      "sequence": 4,
+      "occurredAt": "2026-09-23T07:10:01.848Z",
+      "actor": "system",
+      "action": {
+        "actionType": "click",
+        "target": [
+          {
+            "strategy": "role",
+            "role": "button",
+            "accessibleName": "Sign In"
+          },
+          {
+            "strategy": "text",
+            "text": "Sign In",
+            "matchExactly": true
+          },
+          {
+            "strategy": "css",
+            "selector": "#ctl00_ContentMain_btnLogin"
+          }
+        ]
+      },
+      "stepId": "click-signIn",
+      "resolvedByIndex": 0,
+      "succeeded": true
+    },
+    {
+      "entryType": "assertion",
+      "sequence": 5,
+      "occurredAt": "2026-09-23T07:10:01.880Z",
+      "actor": "system",
+      "checkpointId": "reached-membersSearch",
+      "passed": true
+    },
+    {
+      "entryType": "action",
+      "sequence": 6,
+      "occurredAt": "2026-09-23T07:10:01.916Z",
+      "actor": "system",
+      "action": {
+        "actionType": "fill",
+        "target": [
+          {
+            "strategy": "adjacent",
+            "labelText": "Member No:",
+            "direction": "next",
+            "targetRole": "textbox"
+          },
+          {
+            "strategy": "css",
+            "selector": "#ctl00_ContentMain_txtMbrNo"
+          },
+          {
+            "strategy": "role",
+            "role": "textbox",
+            "matchIndex": 0
+          }
+        ],
+        "value": "88888"
+      },
+      "stepId": "fill-memberNo",
+      "resolvedByIndex": 0,
+      "succeeded": true
+    },
+    {
+      "entryType": "action",
+      "sequence": 7,
+      "occurredAt": "2026-09-23T07:10:02.010Z",
+      "actor": "system",
+      "action": {
+        "actionType": "click",
+        "target": [
+          {
+            "strategy": "role",
+            "role": "button",
+            "accessibleName": "Search"
+          },
+          {
+            "strategy": "text",
+            "text": "Search",
+            "matchExactly": true
+          },
+          {
+            "strategy": "css",
+            "selector": "#ctl00_ContentMain_btnSearch"
+          }
+        ]
+      },
+      "stepId": "click-search",
+      "resolvedByIndex": 0,
+      "succeeded": true
+    },
+    {
+      "entryType": "action",
+      "sequence": 8,
+      "occurredAt": "2026-09-23T07:10:02.043Z",
+      "actor": "system",
+      "action": {
+        "actionType": "click",
+        "target": [
+          {
+            "strategy": "role",
+            "role": "link",
+            "accessibleName": "JOHNSON, MARGARET A"
+          },
+          {
+            "strategy": "text",
+            "text": "JOHNSON, MARGARET A",
+            "matchExactly": true
+          },
+          {
+            "strategy": "role",
+            "role": "link",
+            "matchIndex": 8
+          }
+        ]
+      },
+      "stepId": "click-johnsonMargaretA",
+      "succeeded": false
+    }
+  ],
+  "outcome": {
+    "classification": "failed",
+    "failureCode": "locator_not_found",
+    "message": "Step \"click-johnsonMargaretA\": no rung in the locator ladder matched",
+    "failedAtStepId": "click-johnsonMargaretA",
+    "recoveries": [],
+    "interventionRaised": false
+  }
+}

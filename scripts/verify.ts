@@ -21,8 +21,12 @@ const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const PORT = Number(process.env.TARGET_APP_PORT ?? 4000);
 const BASE_URL = `http://127.0.0.1:${PORT}`;
 
-const ARTIFACT = 'packages/schemas/examples/lookup-savings-balance.capability.json';
-const CAPABILITY_ID = 'lookup-savings-balance';
+// The artifact to check, defaulting to the hand-written example. Pass a
+// discovered one to verify what the system actually produced rather than what
+// was written for it by hand — which is the only version of this table that
+// says anything about the pipeline.
+const ARTIFACT =
+  process.argv[2] ?? 'packages/schemas/examples/lookup-savings-balance.capability.json';
 
 const OPERATOR_USER_ID = 'tester';
 const OPERATOR_PASSWORD = 'verify-run-not-a-real-credential';
@@ -124,6 +128,12 @@ function actualDetail(outcome: Record<string, unknown>): string | undefined {
 
 async function main(): Promise<void> {
   await requireFreePort();
+
+  const artifact = JSON.parse(await readFile(join(repoRoot, ARTIFACT), 'utf-8')) as {
+    capabilityId: string;
+  };
+  const CAPABILITY_ID = artifact.capabilityId;
+  console.log(`Verifying ${ARTIFACT} (${CAPABILITY_ID})`);
 
   const targetApp: ChildProcess = spawn(
     resolve(repoRoot, 'node_modules/.bin/tsx'),
