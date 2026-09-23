@@ -11,6 +11,7 @@
  *
  * Exits non-zero if any row disagrees, so it can gate a commit.
  */
+import { createServer } from 'node:net';
 import { spawn, type ChildProcess } from 'node:child_process';
 import { copyFile, mkdir, readFile, rm } from 'node:fs/promises';
 import { dirname, join, resolve } from 'node:path';
@@ -46,6 +47,37 @@ const SCENARIOS: Scenario[] = [
   { memberNumber: '44444', name: 'app-error', classification: 'failed', detail: 'app_error' },
   { memberNumber: '77777', name: 'session-expired', classification: 'failed', detail: 'session_expired' },
 ];
+
+/**
+ * Refuses to run against a target app this script did not start.
+ *
+ * The health check alone is not enough: an instance left over from something
+ * else answers it perfectly well, and then every row in the table below is a
+ * statement about someone else's process. A verification you cannot trust is
+ * worse than none, because it is the thing standing in for reading the code.
+ */
+function requireFreePort(): Promise<void> {
+  return new Promise((resolveCheck, reject) => {
+    const probe = createServer();
+
+    probe.once('error', (error: NodeJS.ErrnoException) => {
+      reject(
+        new Error(
+          error.code === 'EADDRINUSE'
+            ? `Port ${PORT} is already in use. Something else is serving the target app, and ` +
+              `this run would be checking that instead. Stop it, or set TARGET_APP_PORT.`
+            : `Could not check port ${PORT}: ${error.message}`,
+        ),
+      );
+    });
+
+    probe.once('listening', () => probe.close(() => resolveCheck()));
+    // No host: binding one interface succeeds even while another process holds
+    // all of them, which is how this check passed happily next to a running
+    // target app the first time it was written.
+    probe.listen(PORT);
+  });
+}
 
 async function waitForHealth(timeoutMilliseconds = 20_000): Promise<void> {
   const start = Date.now();
@@ -91,6 +123,8 @@ function actualDetail(outcome: Record<string, unknown>): string | undefined {
 }
 
 async function main(): Promise<void> {
+  await requireFreePort();
+
   const targetApp: ChildProcess = spawn(
     resolve(repoRoot, 'node_modules/.bin/tsx'),
     ['apps/target-app/src/index.ts'],
@@ -107,6 +141,7 @@ async function main(): Promise<void> {
     // cannot be checked by anyone. Copied rather than referenced so the folder
     // stands on its own if it is moved.
     const capabilityDirectory = join(repoRoot, 'evidence', CAPABILITY_ID);
+    await rm(join(capabilityDirectory, 'replays'), { recursive: true, force: true });
     await mkdir(capabilityDirectory, { recursive: true });
     await copyFile(join(repoRoot, ARTIFACT), join(capabilityDirectory, 'capability.json'));
 
@@ -115,9 +150,8 @@ async function main(): Promise<void> {
       // that lands somewhere else is a failing row, so the layout and the
       // assertion cannot drift apart.
       const runDirectory = join(
-        repoRoot, 'evidence', CAPABILITY_ID, 'replays', scenario.classification, scenario.name,
+        capabilityDirectory, 'replays', scenario.classification, scenario.name,
       );
-      await rm(runDirectory, { recursive: true, force: true });
 
       const outputPath = join(runDirectory, 'runlog.json');
       await runReplay(scenario, outputPath);
