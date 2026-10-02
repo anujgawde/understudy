@@ -1,3 +1,5 @@
+<div align="center">
+
 # Understudy
 
 An LLM works out how to do a task on a web application once. Understudy writes down what it
@@ -6,6 +8,10 @@ artifact — deterministically, in milliseconds, without a model deciding anythi
 
 The name is the idea: a model rehearses the part once, and then something cheaper and more
 reliable performs it every night.
+
+<video src="brag.mp4" width="600" controls></video>
+
+</div>
 
 ---
 
