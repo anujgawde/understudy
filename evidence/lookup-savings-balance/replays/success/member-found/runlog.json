@@ -1,0 +1,205 @@
+{
+  "runId": "2230659a-7e09-4cd6-9a47-54bffab98b5a",
+  "mode": "replay",
+  "capabilityId": "lookup-savings-balance",
+  "inputs": {
+    "memberNumber": "12345",
+    "operatorUserId": "tester",
+    "operatorPassword": "[redacted]"
+  },
+  "startedAt": "2026-09-26T18:58:35.318Z",
+  "completedAt": "2026-09-26T18:58:36.075Z",
+  "entries": [
+    {
+      "entryType": "action",
+      "sequence": 0,
+      "occurredAt": "2026-09-26T18:58:35.352Z",
+      "actor": "system",
+      "action": {
+        "actionType": "navigate",
+        "url": "http://localhost:4000/login"
+      },
+      "stepId": "open-login",
+      "succeeded": true
+    },
+    {
+      "entryType": "action",
+      "sequence": 1,
+      "occurredAt": "2026-09-26T18:58:35.486Z",
+      "actor": "system",
+      "action": {
+        "actionType": "fill",
+        "target": [
+          {
+            "strategy": "role",
+            "role": "textbox",
+            "accessibleName": "User ID"
+          },
+          {
+            "strategy": "adjacent",
+            "labelText": "User ID",
+            "direction": "next",
+            "targetRole": "textbox"
+          }
+        ],
+        "value": "tester"
+      },
+      "stepId": "fill-username",
+      "resolvedByIndex": 1,
+      "succeeded": true
+    },
+    {
+      "entryType": "action",
+      "sequence": 2,
+      "occurredAt": "2026-09-26T18:58:35.563Z",
+      "actor": "system",
+      "action": {
+        "actionType": "fill",
+        "target": [
+          {
+            "strategy": "adjacent",
+            "labelText": "Password",
+            "direction": "next",
+            "targetRole": "textbox"
+          },
+          {
+            "strategy": "css",
+            "selector": "#ctl00_ContentMain_txtPassword"
+          }
+        ],
+        "value": "[redacted]"
+      },
+      "stepId": "fill-password",
+      "resolvedByIndex": 0,
+      "succeeded": true
+    },
+    {
+      "entryType": "action",
+      "sequence": 3,
+      "occurredAt": "2026-09-26T18:58:35.702Z",
+      "actor": "system",
+      "action": {
+        "actionType": "click",
+        "target": [
+          {
+            "strategy": "role",
+            "role": "button",
+            "accessibleName": "Sign In"
+          }
+        ]
+      },
+      "stepId": "submit-login",
+      "resolvedByIndex": 0,
+      "succeeded": true
+    },
+    {
+      "entryType": "assertion",
+      "sequence": 4,
+      "occurredAt": "2026-09-26T18:58:35.724Z",
+      "actor": "system",
+      "checkpointId": "reached-search",
+      "passed": true
+    },
+    {
+      "entryType": "action",
+      "sequence": 5,
+      "occurredAt": "2026-09-26T18:58:35.761Z",
+      "actor": "system",
+      "action": {
+        "actionType": "fill",
+        "target": [
+          {
+            "strategy": "adjacent",
+            "labelText": "Member No",
+            "direction": "next",
+            "targetRole": "textbox"
+          },
+          {
+            "strategy": "css",
+            "selector": "#ctl00_ContentMain_txtMbrNo"
+          }
+        ],
+        "value": "12345"
+      },
+      "stepId": "fill-member-number",
+      "resolvedByIndex": 0,
+      "succeeded": true
+    },
+    {
+      "entryType": "action",
+      "sequence": 6,
+      "occurredAt": "2026-09-26T18:58:35.876Z",
+      "actor": "system",
+      "action": {
+        "actionType": "click",
+        "target": [
+          {
+            "strategy": "role",
+            "role": "button",
+            "accessibleName": "Search"
+          }
+        ]
+      },
+      "stepId": "submit-search",
+      "resolvedByIndex": 0,
+      "succeeded": true
+    },
+    {
+      "entryType": "action",
+      "sequence": 7,
+      "occurredAt": "2026-09-26T18:58:35.994Z",
+      "actor": "system",
+      "action": {
+        "actionType": "click",
+        "target": [
+          {
+            "strategy": "css",
+            "selector": "#ctl00_ContentMain_grdResults tbody tr td:nth-child(2) a",
+            "matchIndex": 0
+          },
+          {
+            "strategy": "css",
+            "selector": ".ctl00_Grid tbody a",
+            "matchIndex": 0
+          }
+        ]
+      },
+      "stepId": "open-member-detail",
+      "resolvedByIndex": 0,
+      "succeeded": true
+    },
+    {
+      "entryType": "assertion",
+      "sequence": 8,
+      "occurredAt": "2026-09-26T18:58:36.023Z",
+      "actor": "system",
+      "checkpointId": "reached-member-detail",
+      "passed": true
+    },
+    {
+      "entryType": "extraction",
+      "sequence": 9,
+      "occurredAt": "2026-09-26T18:58:36.073Z",
+      "actor": "system",
+      "outputName": "memberName",
+      "rawValue": "JOHNSON, MARGARET A",
+      "coerced": false
+    },
+    {
+      "entryType": "extraction",
+      "sequence": 10,
+      "occurredAt": "2026-09-26T18:58:36.075Z",
+      "actor": "system",
+      "outputName": "savingsBalance",
+      "rawValue": "$4,182.90",
+      "coerced": true
+    }
+  ],
+  "outcome": {
+    "classification": "success",
+    "outputs": {
+      "memberName": "JOHNSON, MARGARET A",
+      "savingsBalance": 4182.9
+    }
+  }
+}
